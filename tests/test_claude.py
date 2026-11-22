@@ -45,6 +45,11 @@ MOCK = r"""
 """
 
 
+SCREEN = ('書名：《測試之書》\n章節：封面\n類型：論點書\n\n'
+          '【核心主張】主張一。\n核心概念：\n概念1 刻意練習：操作定義；支撐主張一；深入步驟：①②③\n'
+          '【背景與批評】批評。\n【第一性原理】推理。\n【解構】假設。\n【下一步】行動。')
+
+
 def main():
     srv, url = serve(ROOT / 'dist')
     img = png_file()
@@ -86,10 +91,23 @@ def main():
         page.set_input_files('#file', img)
         check(page.is_enabled('#askBtn'), '篩書模式有相片即可送出')
         check(page.inner_text('#askBtn') == '篩書：核心主張', '篩書按鈕名稱')
+        page.evaluate("window.__claude.answer = " + json.dumps(SCREEN))
         page.click('#askBtn')
         page.wait_for_function('window.__claude.samples.length === 2')
         s = page.evaluate('window.__claude.samples[1]')
         check('【核心主張】' in s['prompt'] and NOTE not in s['prompt'], '篩書提問用【核心主張】，不含重述')
+        check('核心概念：' in s['prompt'] and '深入步驟' in s['prompt'] and '不湊數' in s['prompt'], '篩書提問要求核心概念（最多五個、不湊數）及深入步驟')
+        page.wait_for_function("document.getElementById('say').textContent.includes('已儲存')")
+
+        # 同一本書的內文頁：帶入篩書時的核心概念
+        page.evaluate("window.__claude.answer = " + json.dumps(ANSWER))
+        page.check('#modeA')
+        page.set_input_files('#file', img)
+        page.fill('#note', NOTE)
+        page.click('#askBtn')
+        page.wait_for_function('window.__claude.samples.length === 3')
+        s = page.evaluate('window.__claude.samples[2]')
+        check('概念1 刻意練習' in s['prompt'] and '推進或修正' in s['prompt'], '內文頁提問帶入同一本書的核心概念，並要求對應')
         page.wait_for_function("document.getElementById('say').textContent.includes('已儲存')")
 
         # 匯出經 downloads
@@ -98,7 +116,7 @@ def main():
         f = page.evaluate('window.__claude.saves[0]')
         data = json.loads(f['data'])
         check(f['filename'].endswith('.json') and data.get('app') == '睇書記錄', '匯出 JSON 經 downloads')
-        check(len(data['entries']) == 2 and len(data['images']) == 2, '匯出包括 2 條記錄和 2 張相片')
+        check(len(data['entries']) == 3 and len(data['images']) == 3, '匯出包括 3 條記錄和 3 張相片')
         check({'entries', 'cards', 'sessions', 'practice'} <= set(data), '匯出集合名稱不變')
 
         check(not errors, '沒有 JavaScript 錯誤' + (('：' + errors[0]) if errors else ''))
