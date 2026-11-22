@@ -426,7 +426,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-22 · 8c77ffe · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-22 · 19bf384 · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -634,7 +634,7 @@ function flipNow(){ const f = S.flip; return f && f.at && Date.now() - f.at < FL
 function gate(){
   const mode = curMode(), n = plain($('note').value).length;
   if (!S.files.length) return {ok: false, msg: mode === 'A' ? '寫好重述後，打開書影低這一頁，才可交 Claude 核對。' : '先上載封面、目錄或前言的相片。'};
-  if (mode === 'A' && n < MIN_NOTE) return {ok: false, msg: '重述還差 ' + (MIN_NOTE - n) + ' 字：先合上書自己寫，才可交 Claude 核對。'};
+  if (mode === 'A' && n < MIN_NOTE) return {ok: false, msg: '重述還差 ' + (MIN_NOTE - n) + ' 字：先合上書自己寫，才可交 Claude 核對。' + (n ? '' : '如果這是封面或目錄，請在上面「這一頁是」揀「封面／目錄：篩書」，不用重述。')};
   return {ok: true, msg: ''};
 }
 function renderComposer(){

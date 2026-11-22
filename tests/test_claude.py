@@ -68,6 +68,8 @@ def main():
         page.set_input_files('#file', img)
         check(page.is_disabled('#askBtn') and '重述還差' in page.inner_text('#gateMsg'), '重述不足 20 字不可送出')
         check(page.evaluate('window.__claude.samples.length') == 0, '選相片後沒有自動送出')
+        page.fill('#note', '')
+        check('封面／目錄：篩書' in page.inner_text('#gateMsg'), '未寫重述時提示封面要揀篩書')
 
         page.fill('#note', NOTE)
         page.click('#askBtn')
