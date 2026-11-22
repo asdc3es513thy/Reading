@@ -592,7 +592,8 @@ function buildPrompt(mode, c, note, nImg){
     '3. 證據分級：分清結論靠推導、數據、案例還是個人經驗；只有成功案例、沒有失敗樣本，可信度降一級。',
     '4. 第一性原理：把主張拆到不能再拆的基本事實或約束，分清事實與假設，只用基本事實一步一步重新推導，不靠類比、慣例或權威。',
     '5. 時間盒：每頁只深入最重要的一點，寧可少而深，不要多而淺。',
-    '6. 資料來源：圖中原文優先；圖中沒有的內容標明「模型記憶，未查證」；不確定就說不確定，不編造頁碼、數據或引文；你不能上網，不要假裝查過；你自己的推論標明「推論」。',
+    '6. 資料來源：「作者說過甚麼」只以圖中原文為準；圖中沒有的書本內容標明「模型記憶，未查證」；不編造頁碼、數據或引文；你不能上網，不要假裝查過；你自己的推論標明「推論」。',
+    '7. 推理要用機制：推導時應該引用該領域已確立的認知、物理、經濟或統計規律作為齒輪，標明「領域機制」；這不算編造書本內容。書頁資料少，不是停在「無法判斷」的理由，要改用領域機制推導。',
     '',
     '用戶當前要解決的問題：' + (c.question || '未提供'),
     '上一張圖的書名：' + (c.title || '沒有') + '；章節：' + (c.chapter || '沒有'),
@@ -603,11 +604,17 @@ function buildPrompt(mode, c, note, nImg){
   const titleRule = '書名：只寫書名本身，不加原文書名、作者或括號；判斷不到但與上一張圖屬同一本書就沿用上一張的書名；否則寫「未能判斷」。';
   const middle = [
     '【背景與批評】這些主張靠什麼證據成立、證據有多強、有沒有倖存者偏差；領域內已知的主要批評或相反證據；同主題有沒有證據更強的書或研究。',
-    '【第一性原理】選最重要的一個主張，分四步寫出完整的思考過程和具體推理：（一）拆到不能再拆的基本事實或約束，每條註明「已知事實」或「假設」；（二）指出哪些部分只是類比、慣例或權威背書；（三）只用基本事實重新推導，每一步寫成「因為……所以……」；（四）比較推導結果與作者結論，指出一致和不一致之處。',
-    '【解構】只寫最致命的一至兩個隱含假設，逐個說明如果不成立會怎樣；再寫適用範圍在哪裡結束。'
+    '【第一性原理】選最重要的一個主張，先把它改寫成一行「投入 X → 經機制 M → 產出 Y，受限於約束 C」，刪去「高手」「有效」「全面提升」這類沒有操作定義的詞。然後分四步寫出完整的思考過程和具體推理：',
+    '（一）拆到不能再拆的基本事實或約束，每條註明「已知事實」「假設」或「領域機制」；其中最少兩條是硬約束，例如時間或注意力零和、容量上限、邊際遞減、干擾、激勵扭曲。',
+    '（二）指出哪些部分只是類比、慣例或權威背書。',
+    '（三）只用第（一）步的事實和約束重新推導，寫成三至四環的鎖鏈，每環標「鏈1」「鏈2」……：第一環以外，每一環都以「承鏈N」開頭，它的「因為」必須是上一環的「所以」，再加上第（一）步的一條約束；不可寫成彼此獨立的並列句。最後一環推出淨效益轉負的臨界條件：這個方法用甚麼代價換收益，在甚麼條件下會比不用它更差。數字只可用圖中原文或標明「假設」的數值。',
+    '鎖鏈內不用「可能」「未必」「無法判斷」收尾；資料不足時寫成條件式：「若 A，按機制 M 必然 B；若非 A，則 D」，並寫明要看到甚麼證據才能判斷 A。',
+    '（四）比較推導結果與作者結論，指出一致和不一致之處，以及不一致出在鎖鏈哪一環。',
+    '【解構】只寫最致命的一至兩個隱含假設，每個都必須專屬這個主張的機制。寫完先做替換測試：把方法名換成另一種方法（例如「多做練習」「早睡早起」）後句子仍然通順，就是萬用批評，刪掉重寫；「受多種因素影響」「因人而異」「需要大量練習」「沒有提供證據」一類都不算。逐個說明如果不成立，第一性原理的鎖鏈在哪一環斷開、結果變成怎樣；再寫適用範圍在哪裡結束。'
   ];
   if (mode === 'B') return head.concat([
     '這是封面、目錄或前言，用途是篩書。用戶未讀內文，沒有重述。',
+    '圖中資料少：「封面（或目錄）未展示」全篇最多說一次；【第一性原理】和【解構】改為推導這本書方法所屬領域的已知機制，判斷這個方法在甚麼條件下成立或失效。',
     '開頭三行固定格式，每行一項：',
     titleRule,
     '章節：寫「封面」「目錄」或「前言」。',
@@ -751,7 +758,7 @@ async function submit(withAnswer){
       if (imgs.length) opts.images = imgs;
       const r = await S.sample(buildPrompt(mode, ctx(), note, imgs.length), opts);
       const p = parseAnswer(r.text);
-      Object.assign(rec, {answer: p.text, truncated: !!r.truncated, bookTitle: p.title, chapter: p.chapter, bookType: p.type || typeFor(p.title), cover: p.cover, wrong: p.wrong});
+      Object.assign(rec, {answer: p.text, truncated: !!r.truncated, engine: r.engine || '', bookTitle: p.title, chapter: p.chapter, bookType: p.type || typeFor(p.title), cover: p.cover, wrong: p.wrong});
     } catch (e) {
       const kept = e && e.text ? e.text : '';
       $('liveText').textContent = kept; $('live').hidden = !kept;
@@ -851,6 +858,7 @@ function entryNode(e){
   if (e.answer) {
     a.append(el('p', 'lbl', '答覆'), el('p', 'answer', e.answer));
     if (e.truncated) a.append(el('p', 'msg', '（答覆因長度被截短）'));
+    if (e.engine) a.append(el('p', 'msg', '答覆來源：' + e.engine));
   }
   const foot = el('div', 'row'), cards = S.cards.filter(c => c.sourceType === 'entry' && c.sourceId === e.id);
   if (!e.answer) {
@@ -1365,7 +1373,8 @@ function remoteSample(max){
     }
     if (!end) throw {code: 'network', text};
     if (!text.trim()) throw {code: 'empty', detail: end.provider || ''};
-    return {text, truncated: !!end.truncated, sources: Array.isArray(end.sources) ? end.sources : []};
+    const engine = [ENGINE[end.provider] || end.provider, end.model].filter(Boolean).join(' · ');
+    return {text, truncated: !!end.truncated, sources: Array.isArray(end.sources) ? end.sources : [], engine};
   };
   ask.limits = async () => ({images: {maxCount: max}});
   return ask;
