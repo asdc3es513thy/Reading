@@ -2,7 +2,7 @@
 
 睇書作為自主路徑進步迴路：Entry Filter → Comprehension → Deconstruction → Reconstruction → Validation Loop，疊加 Elaborative Encoding、Retrieval Practice、Spaced Repetition。作者結論只是假說；閱讀的目的，是在真實處境中驗證，建立自己的模型。
 
-方法全文見 [METHOD.md](METHOD.md)。
+方法全文見 [METHOD.md](METHOD.md)；由設定到每日使用的完整流程見 [WORKFLOW.md](WORKFLOW.md)。
 
 ## 兩個版本
 
@@ -52,6 +52,7 @@
 | 檔案 | 用途 |
 |---|---|
 | `index.html` | GitHub Pages 版（由 `build.py` 產生，不要手改） |
+| `WORKFLOW.md` | 完整流程：設定、閱讀、驗證、複習、備份、出錯處理、更新 |
 | `METHOD.md` | 方法全文（由 `build.py` 從頁面產生，不要手改） |
 | `src/reading-log.src.html` | 唯一原始檔 |
 | `src/bg.jpg`、`src/VERSION` | 背景相片、發佈日期 |
