@@ -132,7 +132,7 @@ def web_mode(b, url, img):
             done = {'done': True, 'truncated': False, 'sources': [{'title': '出版社新書頁', 'uri': 'https://example.com/new-book'}, {'title': '壞連結', 'uri': 'javascript:alert(1)'}]}
             lines = [json.dumps({'t': RECS}, ensure_ascii=False), json.dumps(done, ensure_ascii=False)]
             return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
-        lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), '{"done":true,"truncated":false}']
+        lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), '{"done":true,"truncated":false,"provider":"openrouter","model":"test/model:free"}']
         return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
 
     ctx = b.new_context()
@@ -167,6 +167,8 @@ def web_mode(b, url, img):
     page.wait_for_function("document.getElementById('records').textContent.includes('測試之書')")
     last = calls[-1]
     check(NOTE in last['prompt'] and '【核對】' in last['prompt'] and len(last['images']) == 1 and last['images'][0]['type'] in ('image/jpeg', 'image/png') and last['images'][0]['data'], '網頁版提問含重述、【核對】及相片')
+    check('承鏈' in last['prompt'] and '替換測試' in last['prompt'] and '淨效益轉負' in last['prompt'] and '領域機制' in last['prompt'], '提問要求首尾承接的推理鎖鏈、負收益臨界、替換測試、領域機制')
+    check('答覆來源：OpenRouter · test/model:free' in page.inner_text('#records'), '記錄顯示答覆來源（引擎和模型）')
     say = page.inner_text('#say')
     check('覆蓋 2/3' in say and '講錯 1' in say, '網頁版答覆解析出覆蓋和講錯')
     check(page.evaluate("localStorage.getItem('reading-log:api-pass')") == 'secret', '通行碼記在 reading-log: 前綴鍵')
