@@ -93,16 +93,12 @@ async function openGithub(images, prompt, signal) {
   for (const model of list(process.env.GITHUB_MODELS, GITHUB_DEFAULT)) {
     let r;
     try {
-      r = await fetch(url, {
-        method: 'POST', signal,
-        headers: {
-          authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-          'content-type': 'application/json',
-          accept: 'text/event-stream',
-          'x-github-api-version': '2022-11-28'
-        },
-        body: JSON.stringify({model, stream: true, messages: [{role: 'user', content}]})
-      });
+      r = await postFollow(url, {
+        authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        'content-type': 'application/json',
+        accept: 'application/vnd.github+json',
+        'x-github-api-version': '2022-11-28'
+      }, JSON.stringify({model, stream: true, messages: [{role: 'user', content}]}), signal);
     } catch (e) {
       if (e && e.name === 'AbortError') throw e;
       last = new ProviderError('network', 0, short(e && e.message));
@@ -118,6 +114,18 @@ async function openGithub(images, prompt, signal) {
         : 'upstream', r.status, `${model} ${short(txt)}`);
   }
   throw last;
+}
+
+// 跟隨轉址時保持 POST 和內容（fetch 遇到 301／302 會改成 GET，只會拿到「OK」）
+async function postFollow(url, headers, body, signal) {
+  let u = url;
+  for (let i = 0; i < 4; i++) {
+    const r = await fetch(u, {method: 'POST', headers, body, signal, redirect: 'manual'});
+    const loc = r.headers.get('location');
+    if (r.status >= 300 && r.status < 400 && loc) { await r.body?.cancel().catch(() => {}); u = new URL(loc, u).toString(); continue; }
+    return r;
+  }
+  throw new ProviderError('upstream', 0, 'github 轉址太多次');
 }
 
 async function* githubEvents(r) {
@@ -152,7 +160,7 @@ async function* githubEvents(r) {
     const c = j && j.choices && j.choices[0];
     const text = c && c.message && typeof c.message.content === 'string' ? c.message.content : '';
     if (text) { yield {t: text}; finish = c.finish_reason || finish; }
-    else if (finish !== 'content_filter') throw new ProviderError('upstream', 0, 'github 沒有回覆內容 ' + innerMessage(raw));
+    else if (finish !== 'content_filter') throw new ProviderError('upstream', 0, `github 沒有回覆內容（${r.status} ${r.headers.get('content-type') || ''} ${r.url || ''}）` + innerMessage(raw));
   }
   yield {end: true, truncated: finish === 'length', refused: finish === 'content_filter', stop: finish};
 }

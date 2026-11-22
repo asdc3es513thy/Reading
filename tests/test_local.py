@@ -223,6 +223,7 @@ def api_check():
     check(o['ghLen'].get('truncated') is True and o['ghFilter'].get('error') == 'refused', 'API：GitHub 截短和內容過濾')
     check(o['pro503'].get('model') == 'gemini-3.8-flash', 'API：Gemini Pro 太忙（503）時改用 Flash')
     check(o['ghStreamErr'].get('provider') == 'gemini', 'API：GitHub 未出文字就斷線時改用 Gemini')
+    check(o['ghRedirect'].get('provider') == 'github' and o['ghRedirectReq'][:2] == ['POST /inference/chat/completions', 'POST /inference2/chat/completions'], 'API：GitHub 轉址後仍用 POST 送出提問')
     check(o['ghEmpty'].get('provider') == 'gemini', 'API：GitHub 沒有文字時改用 Gemini')
     check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'github', 'API：GitHub 一次過 JSON 答覆也讀得到')
     check(o['allDown'].get('error') == 'upstream' and 'gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時回報引擎和狀態碼')

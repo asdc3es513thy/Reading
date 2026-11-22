@@ -9,8 +9,13 @@ const fake = http.createServer((req, res) => {
   let body = '';
   req.on('data', c => { body += c; });
   req.on('end', () => {
-    seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
-    if (req.url.startsWith('/inference/')) {
+    seen.push({path: req.url, method: req.method, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
+    if (req.url.startsWith('/inference/') && mode === 'ghredirect') {
+      res.writeHead(302, {location: '/inference2/chat/completions'});
+      return res.end();
+    }
+    if (req.url.startsWith('/inference2/') && req.method !== 'POST') { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
+    if (req.url.startsWith('/inference/') || req.url.startsWith('/inference2/')) {
       if (mode === 'alldown') { res.writeHead(500, {'content-type': 'application/json'}); return res.end('{"error":{"message":"internal error"}}'); }
       if (mode === 'ghempty') {
         res.writeHead(200, {'content-type': 'text/event-stream'});
@@ -129,6 +134,10 @@ out.searchBoth = (await last({pass: 'secret', prompt: 'p', search: true})).pop()
 out.searchBothFirst = seen[b3].path.split('?')[0];
 mode = 'ghstreamerr';
 out.ghStreamErr = (await last({pass: 'secret', prompt: 'p'})).pop();
+mode = 'ghredirect';
+let b4 = seen.length;
+out.ghRedirect = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.ghRedirectReq = seen.slice(b4).map(x => x.method + ' ' + x.path.split('?')[0]);
 mode = 'ghempty';
 out.ghEmpty = (await last({pass: 'secret', prompt: 'p'})).pop();
 mode = 'ghjson';
