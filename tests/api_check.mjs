@@ -10,6 +10,10 @@ const fake = http.createServer((req, res) => {
   req.on('data', c => { body += c; });
   req.on('end', () => {
     seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || ''});
+    if (mode === 'nopro' && req.url.includes('gemini-3.8-pro')) {
+      res.writeHead(404, {'content-type': 'application/json'});
+      return res.end(JSON.stringify({error: {code: 404, message: 'models/gemini-3.8-pro is not found', status: 'NOT_FOUND'}}));
+    }
     if (mode === 'nothink' && JSON.parse(body).generationConfig?.thinkingConfig) {
       res.writeHead(400, {'content-type': 'application/json'});
       return res.end(JSON.stringify({error: {code: 400, message: 'thinking_level is not supported by this model', status: 'INVALID_ARGUMENT'}}));
@@ -51,6 +55,10 @@ mode = 'long';
 out.long = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 mode = 'nothink';
 out.nothink = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
+mode = 'nopro';
+const before = seen.length;
+out.nopro = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
+out.noproPaths = seen.slice(before).map(x => x.path);
 mode = 'blocked';
 out.blocked = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 

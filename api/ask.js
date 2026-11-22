@@ -1,10 +1,11 @@
 // Vercel 函數：把頁面的提問和書頁相片轉交 Google Gemini（免費額度），逐段串流答覆。
 // 需要在 Vercel 設定環境變數：GEMINI_API_KEY（Google AI Studio 的 API 金鑰）、APP_PASSCODE（通行碼，防止別人用你的額度）。
-// 可選：GEMINI_MODEL（預設 gemini-3.8-flash）；GEMINI_THINKING（思考深度 LOW／MEDIUM／HIGH／XHIGH，預設 HIGH；設為 OFF 則不指定）。
+// 可選：GEMINI_MODEL（逗號分隔，按次序試；預設先 gemini-3.8-pro，用不到就 gemini-3.8-flash）；
+// GEMINI_THINKING（思考深度 LOW／MEDIUM／HIGH／XHIGH，預設 XHIGH；設為 OFF 則不指定）。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const DEFAULT_MODELS = 'gemini-3.8-pro,gemini-3.8-flash';
 const MAX_IMAGES = 4;
 const MAX_PROMPT = 60000;
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -44,18 +45,7 @@ export async function POST(request) {
     async start(ctl) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
       try {
-        const level = (process.env.GEMINI_THINKING || 'HIGH').trim().toUpperCase();
-        const config = {maxOutputTokens: 32000, abortSignal: request.signal};
-        if (level !== 'OFF') config.thinkingConfig = {thinkingLevel: level};
-        const call = cfg => ai.models.generateContentStream({model: process.env.GEMINI_MODEL || DEFAULT_MODEL, contents: [{role: 'user', parts}], config: cfg});
-        let res;
-        try { res = await call(config); }
-        catch (e) {
-          // 個別模型不接受指定思考深度：改用模型預設再試一次
-          if (!(e instanceof ApiError) || e.status !== 400 || !config.thinkingConfig || !/think/i.test(e.message || '')) throw e;
-          delete config.thinkingConfig;
-          res = await call(config);
-        }
+        const res = await openStream(ai, parts, request.signal);
         let finish = '', blocked = '';
         for await (const chunk of res) {
           if (chunk.promptFeedback && chunk.promptFeedback.blockReason) blocked = chunk.promptFeedback.blockReason;
@@ -73,6 +63,29 @@ export async function POST(request) {
     }
   });
   return new Response(stream, {headers: {'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store'}});
+}
+
+// 按次序試每個模型：型號不存在、無權限或額度用完（404／403／429）就試下一個；
+// 不接受指定思考深度（400）就用該模型預設再試一次。
+async function openStream(ai, parts, signal) {
+  const models = (process.env.GEMINI_MODEL || DEFAULT_MODELS).split(',').map(m => m.trim()).filter(Boolean);
+  const level = (process.env.GEMINI_THINKING || 'XHIGH').trim().toUpperCase();
+  let last;
+  for (const model of models) {
+    const config = {maxOutputTokens: 32000, abortSignal: signal};
+    if (level !== 'OFF') config.thinkingConfig = {thinkingLevel: level};
+    for (;;) {
+      try { return await ai.models.generateContentStream({model, contents: [{role: 'user', parts}], config}); }
+      catch (e) {
+        last = e;
+        if (!(e instanceof ApiError)) throw e;
+        if (e.status === 400 && config.thinkingConfig && /think/i.test(e.message || '')) { delete config.thinkingConfig; continue; }
+        if ([403, 404, 429].includes(e.status)) break;
+        throw e;
+      }
+    }
+  }
+  throw last;
 }
 
 function errorCode(e) {
