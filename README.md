@@ -1,2 +1,50 @@
-# Reading
-Entry Filter（進入過濾器）Comprehension（準確理解）Deconstruction（解構）Reconstruction（重構）Validation Loop（驗證迴路）
+# Reading｜睇書記錄
+
+睇書作為自主路徑進步迴路：Entry Filter → Comprehension → Deconstruction → Reconstruction → Validation Loop，疊加 Elaborative Encoding、Retrieval Practice、Spaced Repetition。作者結論只是假說；閱讀的目的，是在真實處境中驗證，建立自己的模型。
+
+方法全文見 [METHOD.md](METHOD.md)。
+
+## 兩個版本
+
+兩個版本由同一份原始檔產生，功能和方法相同，分別在於答覆和記錄存放：
+
+| | Claude 版（主力） | GitHub 版（備用） |
+|---|---|---|
+| 打開 | Claude app → Artifacts →「睇書記錄」 | https://asdc3es513thy.github.io/Reading/ |
+| 上載後答覆 | 自動 | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
+| 記錄存放 | 你的 Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 |
+
+頁底會顯示版本號。兩邊版本號相同，即代表已同步。
+
+## 怎樣用
+
+1. **內文頁**：合上書，先寫重述（最少 20 字），再影這一頁，按「核對我的重述」。答覆會計出你的覆蓋率和講錯的地方。
+2. **封面、目錄、前言**：揀「篩書」，影相即可，得到核心主張、批評，以及這本書值不值得讀。
+3. **值得驗證的頁**：按「升級為模型卡」，寫第一性原理依據、修正版模型、帶數字和期限的預測、失敗條件、到期日。
+4. **到期**：回填結果。命中就入卡，進入 1／3／7／21／60 天的間隔複習；證偽就修正為新版本。
+5. **入定・推理**：閱讀前擲硬幣，決定今次入定與否，累積數據驗證「入定令理解更準確」。迴路指標會顯示迴路有否閉合。
+
+每次答覆有 5 節：核對（篩書時是核心主張）、背景與批評、第一性原理、解構、下一步（行動＋三條蘇格拉底式提問）。
+
+## 資料與備份
+
+- 「方法與記錄」頁底的「備份」可匯出 JSON（包括相片）；在另一個版本匯入，就可以把記錄搬過去。
+- 匯出 Markdown 筆記只有文字，方便交給其他 AI 檢討。
+- **這個 repo 是公開的**：不要把備份 JSON、書頁相片或任何記錄上載到這裏。
+
+## 檔案
+
+| 檔案 | 用途 |
+|---|---|
+| `index.html` | GitHub Pages 版（由 `build.py` 產生，不要手改） |
+| `METHOD.md` | 方法全文（由 `build.py` 從頁面產生，不要手改） |
+| `src/reading-log.src.html` | 唯一原始檔 |
+| `src/bg.jpg`、`src/VERSION` | 背景相片、發佈日期 |
+| `build.py` | 產生 `index.html`、`METHOD.md` 和 Claude 版（`dist/`） |
+| `tests/` | 實際開瀏覽器的測試：`test_local.py` 測 GitHub 版，`test_claude.py` 測 Claude 版 |
+| `CLAUDE.md` | 給 Claude 的更新守則 |
+
+## 更新記錄
+
+- **2026-11-22**：按 Gemini 覆核及 Claude 驗證更新。上載改為雙模式（內文先重述後核對、封面直接篩書）；答覆由 9 節精簡為 5 節；新增模型卡、到期回填和間隔複習；迴路指標改為追蹤建卡、回填、修正；入定實驗改用擲硬幣分配；新增匯出和匯入；頁底加版本號和兩版連結；repo 改為單一原始檔。
+- **2026-11-14**：首版：上載書頁取得答覆、按書和章節分層記錄、方法全文、入定・推理分頁、宇宙背景。
