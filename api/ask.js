@@ -1,6 +1,6 @@
 // Vercel 函數：把頁面的提問和書頁相片轉交 Google Gemini（免費額度），逐段串流答覆。
 // 需要在 Vercel 設定環境變數：GEMINI_API_KEY（Google AI Studio 的 API 金鑰）、APP_PASSCODE（通行碼，防止別人用你的額度）。
-// 可選：GEMINI_MODEL（預設 gemini-3.8-flash）。
+// 可選：GEMINI_MODEL（預設 gemini-3.8-flash）；GEMINI_THINKING（思考深度 LOW／MEDIUM／HIGH／XHIGH，預設 HIGH；設為 OFF 則不指定）。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
@@ -44,11 +44,18 @@ export async function POST(request) {
     async start(ctl) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
       try {
-        const res = await ai.models.generateContentStream({
-          model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
-          contents: [{role: 'user', parts}],
-          config: {maxOutputTokens: 16000, abortSignal: request.signal}
-        });
+        const level = (process.env.GEMINI_THINKING || 'HIGH').trim().toUpperCase();
+        const config = {maxOutputTokens: 32000, abortSignal: request.signal};
+        if (level !== 'OFF') config.thinkingConfig = {thinkingLevel: level};
+        const call = cfg => ai.models.generateContentStream({model: process.env.GEMINI_MODEL || DEFAULT_MODEL, contents: [{role: 'user', parts}], config: cfg});
+        let res;
+        try { res = await call(config); }
+        catch (e) {
+          // 個別模型不接受指定思考深度：改用模型預設再試一次
+          if (!(e instanceof ApiError) || e.status !== 400 || !config.thinkingConfig || !/think/i.test(e.message || '')) throw e;
+          delete config.thinkingConfig;
+          res = await call(config);
+        }
         let finish = '', blocked = '';
         for await (const chunk of res) {
           if (chunk.promptFeedback && chunk.promptFeedback.blockReason) blocked = chunk.promptFeedback.blockReason;

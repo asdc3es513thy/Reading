@@ -10,6 +10,10 @@ const fake = http.createServer((req, res) => {
   req.on('data', c => { body += c; });
   req.on('end', () => {
     seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || ''});
+    if (mode === 'nothink' && JSON.parse(body).generationConfig?.thinkingConfig) {
+      res.writeHead(400, {'content-type': 'application/json'});
+      return res.end(JSON.stringify({error: {code: 400, message: 'thinking_level is not supported by this model', status: 'INVALID_ARGUMENT'}}));
+    }
     res.writeHead(200, {'content-type': 'text/event-stream'});
     if (mode === 'blocked') { res.write(chunk('', 'SAFETY')); return res.end(); }
     res.write(chunk('書名：《測試》\n'));
@@ -42,8 +46,11 @@ const req = seen[0] || {body: {}};
 out.path = req.path;
 out.key = req.key;
 out.parts = (req.body.contents || [{}])[0].parts;
+out.config = req.body.generationConfig;
 mode = 'long';
 out.long = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
+mode = 'nothink';
+out.nothink = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 mode = 'blocked';
 out.blocked = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 

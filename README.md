@@ -20,7 +20,8 @@
 
 - `GEMINI_API_KEY`：Google AI Studio（aistudio.google.com → Get API key）建立的金鑰，有免費額度。
 - `APP_PASSCODE`：自訂通行碼。網址是公開的，沒有通行碼的人不能用你的額度。
-- 可選 `GEMINI_MODEL`：預設 `gemini-3.8-flash`。
+- 可選 `GEMINI_MODEL`：預設 `gemini-3.8-flash`。想更深入可試 Pro 型號（免費額度較少或沒有）。
+- 可選 `GEMINI_THINKING`：思考深度 `LOW`／`MEDIUM`／`HIGH`／`XHIGH`，預設 `HIGH`；越高越慢、越耗額度。
 
 注意：免費額度每日有次數上限；Google 可能用免費版的內容（包括重述和書頁相片）改進其產品。答覆由 Gemini 產生，格式未必每次與 Claude 版一致。
 

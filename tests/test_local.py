@@ -175,6 +175,8 @@ def api_check():
     check(o['parts'][0] == {'inlineData': {'mimeType': 'image/png', 'data': 'AAAA'}} and o['parts'][-1] == {'text': '提問'}, 'API：相片在前、提問在後')
     check(o['long'] == {'done': True, 'truncated': True, 'stop': 'MAX_TOKENS'}, 'API：答覆過長標示截短')
     check(o['blocked'] == {'error': 'refused'}, 'API：安全封鎖回報 refused')
+    check(o['config'].get('thinkingConfig') == {'thinkingLevel': 'HIGH'}, 'API：預設要求高思考深度')
+    check(o['nothink'].get('done') is True, 'API：模型不接受思考深度時自動改用預設再試')
 
 
 if __name__ == '__main__':
