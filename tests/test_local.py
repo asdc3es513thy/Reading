@@ -199,7 +199,7 @@ def api_check():
     check(o['nopro'].get('done') is True and len(o['noproPaths']) == 2 and 'gemini-3.8-flash' in o['noproPaths'][1], 'API：Pro 用不到時自動改用 Flash')
     check(o['parts'][0] == {'inlineData': {'mimeType': 'image/png', 'data': 'AAAA'}} and o['parts'][-1] == {'text': '提問'}, 'API：相片在前、提問在後')
     check({k: o['long'][k] for k in ('done', 'truncated', 'stop')} == {'done': True, 'truncated': True, 'stop': 'MAX_TOKENS'}, 'API：答覆過長標示截短')
-    check(o['blocked'] == {'error': 'refused'}, 'API：安全封鎖回報 refused')
+    check(o['blocked'].get('error') == 'refused', 'API：安全封鎖回報 refused')
     check(o['config'].get('thinkingConfig') == {'thinkingLevel': 'XHIGH'}, 'API：預設要求最高思考深度')
     check(o['nothink'].get('done') is True, 'API：模型不接受思考深度時自動改用預設再試')
     check(o['searchTools'] == [{'googleSearch': {}}] and o['plainTools'] is None, 'API：只有推介請求才開 Google 搜尋')
@@ -210,7 +210,10 @@ def api_check():
     check(g.get('content') == [{'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,AAAA'}}, {'type': 'text', 'text': '提問'}], 'API：GitHub 請求相片在前、提問在後')
     check(''.join(l.get('t', '') for l in o['gh']) == '書名：《GH》\n【核對】甲。' and o['gh'][-1].get('provider') == 'github', 'API：GitHub 串流答覆完整')
     check(o['ghFallback'].get('provider') == 'gemini' and o['ghFallbackPaths'][:2] == ['/inference/chat/completions'] * 2 and 'gemini' in o['ghFallbackPaths'][2], 'API：GitHub 兩個型號都用不到時改用 Gemini')
-    check(o['ghLen'].get('truncated') is True and o['ghFilter'] == {'error': 'refused'}, 'API：GitHub 截短和內容過濾')
+    check(o['ghLen'].get('truncated') is True and o['ghFilter'].get('error') == 'refused', 'API：GitHub 截短和內容過濾')
+    check(o['pro503'].get('model') == 'gemini-3.8-flash', 'API：Gemini Pro 太忙（503）時改用 Flash')
+    check(o['ghStreamErr'].get('provider') == 'gemini', 'API：GitHub 未出文字就斷線時改用 Gemini')
+    check(o['allDown'].get('error') == 'upstream' and 'gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時回報引擎和狀態碼')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')
 
 

@@ -434,7 +434,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-22 · 9c3e020 · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-22 · 9cb0f8a · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -754,7 +754,7 @@ async function submit(withAnswer){
     } catch (e) {
       const kept = e && e.text ? e.text : '';
       $('liveText').textContent = kept; $('live').hidden = !kept;
-      say(e && e.code === 'cancelled' ? '已停止，未儲存。' : errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || ('script：' + String((e && e.message) || e).slice(0, 120))) + '）');
+      say(e && e.code === 'cancelled' ? '已停止，未儲存。' : errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || ('script：' + String((e && e.message) || e).slice(0, 120))) + (e && e.detail ? '；' + e.detail : '') + '）');
       setBusy(false); return;
     }
   }
@@ -1340,14 +1340,14 @@ function remoteSample(max){
     let r;
     try { r = await fetch('api/ask', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({prompt, images, pass, search: !!opts.search}), signal: opts.signal}); }
     catch (e) { throw {code: e && e.name === 'AbortError' ? 'cancelled' : 'network'}; }
-    if (!r.ok) { let c = ''; try { c = (await r.json()).error; } catch (e) {} if (c === 'bad_pass') store(PASS_KEY, ''); throw {code: c || 'upstream'}; }
+    if (!r.ok) { let c = ''; try { c = (await r.json()).error; } catch (e) {} if (c === 'bad_pass') store(PASS_KEY, ''); throw {code: c || 'upstream', detail: c ? '' : 'HTTP ' + r.status}; }
     const rd = r.body.getReader(), dec = new TextDecoder();
     let buf = '', text = '', end = null;
     const line = l => {
       if (!l.trim()) return;
       const o = JSON.parse(l);
       if (o.t) { text += o.t; if (opts.onText) opts.onText({text}); }
-      else if (o.error) throw {code: o.error, text};
+      else if (o.error) throw {code: o.error, detail: o.detail || '', text};
       else if (o.done) end = o;
     };
     try {
@@ -1415,7 +1415,7 @@ async function loadRecs(auto){
     S.recsBusy = false; renderRecs();
   } catch (e) {
     S.recsBusy = false; renderRecs();
-    msgTo('recsSay', '未能更新推介：' + errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + '）');
+    msgTo('recsSay', '未能更新推介：' + errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + (e && e.detail ? '；' + e.detail : '') + '）');
   }
   $('recsBtn').disabled = false;
 }

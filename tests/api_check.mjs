@@ -11,6 +11,12 @@ const fake = http.createServer((req, res) => {
   req.on('end', () => {
     seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
     if (req.url.startsWith('/inference/')) {
+      if (mode === 'alldown') { res.writeHead(500, {'content-type': 'application/json'}); return res.end('{"error":{"message":"internal error"}}'); }
+      if (mode === 'ghstreamerr') {
+        res.writeHead(200, {'content-type': 'text/event-stream'});
+        res.write(`data: ${JSON.stringify({error: {code: 'server_error', message: 'stream failed'}})}\n\n`);
+        return res.end();
+      }
       if (mode === 'gh429') { res.writeHead(429, {'content-type': 'application/json'}); return res.end('{"error":{"code":"RateLimitReached"}}'); }
       res.writeHead(200, {'content-type': 'text/event-stream'});
       const d = (content, finish_reason = null) => `data: ${JSON.stringify({choices: [{index: 0, delta: content ? {content} : {}, finish_reason}]})}\n\n`;
@@ -19,6 +25,10 @@ const fake = http.createServer((req, res) => {
       res.write(d('', mode === 'ghlen' ? 'length' : mode === 'ghfilter' ? 'content_filter' : 'stop'));
       res.write('data: [DONE]\n\n');
       return res.end();
+    }
+    if (mode === 'alldown' || (mode === 'pro503' && req.url.includes('gemini-3.8-pro'))) {
+      res.writeHead(503, {'content-type': 'application/json'});
+      return res.end(JSON.stringify({error: {code: 503, message: 'The model is overloaded. Please try again later.', status: 'UNAVAILABLE'}}));
     }
     if (mode === 'nopro' && req.url.includes('gemini-3.8-pro')) {
       res.writeHead(404, {'content-type': 'application/json'});
@@ -74,6 +84,8 @@ mode = 'nopro';
 const before = seen.length;
 out.nopro = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 out.noproPaths = seen.slice(before).map(x => x.path);
+mode = 'pro503';
+out.pro503 = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 mode = 'search';
 const b2 = seen.length;
 out.search = (await (await post({pass: 'secret', prompt: 'p', search: true})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
@@ -102,6 +114,10 @@ mode = 'search';
 b3 = seen.length;
 out.searchBoth = (await last({pass: 'secret', prompt: 'p', search: true})).pop();
 out.searchBothFirst = seen[b3].path.split('?')[0];
+mode = 'ghstreamerr';
+out.ghStreamErr = (await last({pass: 'secret', prompt: 'p'})).pop();
+mode = 'alldown';
+out.allDown = (await last({pass: 'secret', prompt: 'p'})).pop();
 delete process.env.GEMINI_API_KEY;
 out.ghOnlyGet = (await api.GET().json()).providers;
 

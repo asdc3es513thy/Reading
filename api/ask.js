@@ -24,8 +24,11 @@ const providers = () => [process.env.GITHUB_TOKEN ? 'github' : '', process.env.G
 const configured = () => !!(providers().length && process.env.APP_PASSCODE);
 
 class ProviderError extends Error {
-  constructor(code, status) { super(code); this.code = code; this.status = status; }
+  constructor(code, status, detail) { super(code); this.code = code; this.status = status; this.detail = detail || ''; }
 }
+// 可以改用下一個型號／引擎的狀態：無權限、型號不存在、逾時、額度用完、伺服器出錯或太忙
+const RETRYABLE = s => [403, 404, 408, 429, 500, 502, 503, 504].includes(s);
+const short = m => String(m || '').replace(/\s+/g, ' ').slice(0, 100);
 
 export function GET() {
   return json(200, {app: '睇書記錄', configured: configured(), maxImages: MAX_IMAGES, providers: providers()});
@@ -51,28 +54,28 @@ export async function POST(request) {
   const stream = new ReadableStream({
     async start(ctl) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
-      let opened = null, last = null;
+      const fail = (e, p) => send({error: errorCode(e), detail: detailOf(e, p)});
+      let last = null, lastP = '';
+      // 按次序試每個引擎；未送出任何文字之前出錯，都改用下一個
       for (const p of order) {
+        let opened, sent = false;
         try {
           opened = p === 'github' ? await openGithub(images, prompt, request.signal) : await openGemini(images, prompt, request.signal, search);
-          break;
+          for await (const ev of opened.events) {
+            if (ev.t) { sent = true; send({t: ev.t}); }
+            else if (ev.end) {
+              if (ev.refused) send({error: 'refused', detail: p});
+              else send({done: true, truncated: !!ev.truncated, stop: ev.stop || '', sources: ev.sources || [], provider: opened.name, model: opened.model});
+            }
+          }
+          ctl.close(); return;
         } catch (e) {
           if (e && e.name === 'AbortError') { send({error: 'cancelled'}); ctl.close(); return; }
-          last = e;
+          if (sent) { fail(e, p); ctl.close(); return; }
+          last = e; lastP = p;
         }
       }
-      if (!opened) { send({error: errorCode(last)}); ctl.close(); return; }
-      try {
-        for await (const ev of opened.events) {
-          if (ev.t) send({t: ev.t});
-          else if (ev.end) {
-            if (ev.refused) send({error: 'refused'});
-            else send({done: true, truncated: !!ev.truncated, stop: ev.stop || '', sources: ev.sources || [], provider: opened.name, model: opened.model});
-          }
-        }
-      } catch (e) {
-        send({error: errorCode(e)});
-      }
+      fail(last, lastP);
       ctl.close();
     }
   });
@@ -102,7 +105,7 @@ async function openGithub(images, prompt, signal) {
       });
     } catch (e) {
       if (e && e.name === 'AbortError') throw e;
-      last = new ProviderError('network');
+      last = new ProviderError('network', 0, short(e && e.message));
       continue;
     }
     if (r.ok && r.body) return {name: 'github', model, events: githubEvents(r)};
@@ -112,7 +115,7 @@ async function openGithub(images, prompt, signal) {
         : r.status === 429 ? 'rate_limited'
         : r.status === 413 || /token.*(limit|large)|too large/i.test(txt) ? 'prompt_too_large'
         : r.status === 400 && /image/i.test(txt) ? 'image_rejected'
-        : 'upstream', r.status);
+        : 'upstream', r.status, `${model} ${short(txt)}`);
   }
   throw last;
 }
@@ -127,7 +130,7 @@ async function* githubEvents(r) {
     if (!data || data === '[DONE]') return;
     let j;
     try { j = JSON.parse(data); } catch (e) { return; }
-    if (j.error) throw new ProviderError(j.error.code === 'content_filter' ? 'refused' : 'upstream');
+    if (j.error) throw new ProviderError(j.error.code === 'content_filter' ? 'refused' : 'upstream', 0, short(j.error.message || j.error.code));
     const c = j.choices && j.choices[0];
     if (!c) return;
     if (c.delta && typeof c.delta.content === 'string' && c.delta.content) yield {t: c.delta.content};
@@ -166,7 +169,7 @@ async function openGemini(images, prompt, signal, search) {
         last = e;
         if (!(e instanceof ApiError)) throw e;
         if (e.status === 400 && config.thinkingConfig && /think/i.test(e.message || '')) { delete config.thinkingConfig; continue; }
-        if ([403, 404, 429].includes(e.status)) break;
+        if (RETRYABLE(e.status)) break;
         throw e;
       }
     }
@@ -188,6 +191,12 @@ async function* geminiEvents(res) {
     if (t) yield {t};
   }
   yield {end: true, truncated: finish === 'MAX_TOKENS', refused: !!blocked || BLOCKED.has(finish), stop: finish, sources: [...sources.values()]};
+}
+
+function detailOf(e, p) {
+  if (!e) return p || '';
+  const st = e.status ? ' ' + e.status : '';
+  return short(`${p || ''}${st} ${e.detail || (e instanceof ApiError ? e.message : e.message || '')}`).trim();
 }
 
 function errorCode(e) {
