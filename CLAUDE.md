@@ -17,6 +17,7 @@
 3. 執行 `python3 tests/test_local.py` 和 `python3 tests/test_claude.py`，全部要通過。新功能要加測試。
 4. Claude 版：用 Artifact 工具把 `dist/reading-log.html` 發佈到 https://claude.ai/artifact/BpatGZuPqyWHMYNGSt6ksF （傳入 `url`）。capabilities 維持 `{db:{}, sample:{images:true}, assets:{}, downloads:true}`。
 5. GitHub 版：在分支 commit `src/`、`index.html`、`METHOD.md` 及相關檔案，推送後由用戶合併到 `main`。不能推送時，把 `index.html` 等檔案交給用戶在 GitHub 網頁上載。
+   - commit 作者要用用戶的 GitHub 帳戶（`asdc3es513thy <322116925+asdc3es513thy@users.noreply.github.com>`，`git config user.name／user.email`），否則 Vercel 免費版會擋住自動部署；Claude 以 `Co-Authored-By` 註明。不要用用戶的私人電郵。
 6. 兩邊頁底的版本號必須相同。
 
 ## 用戶已定案、不可自行改動
