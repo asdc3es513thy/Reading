@@ -108,6 +108,9 @@ def main():
     finish()
 
 
+RECS = '書名：新書甲（New Book A）\n作者／出版年月／出版社：某作者／2026 年 10 月／某出版社\n類型：論點書'
+
+
 def web_mode(b, url, img):
     """Vercel 網頁版：/api/ask 存在時，按「核對我的重述」即經本網站取得答覆。"""
     calls = []
@@ -120,6 +123,10 @@ def web_mode(b, url, img):
         calls.append(body)
         if body.get('pass') != 'secret':
             return route.fulfill(status=401, content_type='application/json', body='{"error":"bad_pass"}')
+        if body.get('search'):
+            done = {'done': True, 'truncated': False, 'sources': [{'title': '出版社新書頁', 'uri': 'https://example.com/new-book'}, {'title': '壞連結', 'uri': 'javascript:alert(1)'}]}
+            lines = [json.dumps({'t': RECS}, ensure_ascii=False), json.dumps(done, ensure_ascii=False)]
+            return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
         lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), '{"done":true,"truncated":false}']
         return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
 
@@ -130,6 +137,7 @@ def web_mode(b, url, img):
     page.route('**/api/ask', handle)
     page.goto(url + 'index.html')
     page.wait_for_function("document.getElementById('whereAmI').textContent.includes('網頁版')")
+    check(page.is_visible('#recsCard') and not any(c.get('search') for c in calls), '網頁版顯示新書推介；未有通行碼不會自動搜尋')
     check(page.is_visible('#askBtn') and page.is_hidden('#copyBtn') and page.is_visible('#pass'), '網頁版：顯示「核對我的重述」和通行碼欄')
 
     page.set_input_files('#file', img)
@@ -154,6 +162,21 @@ def web_mode(b, url, img):
     page.reload()
     page.wait_for_function("document.getElementById('records').textContent.includes('測試之書')")
     check(page.input_value('#pass') == 'secret', '重新載入後記得通行碼，記錄仍在')
+
+    # 新書推介：有通行碼、未有推介 → 打開即自動搜尋一次
+    page.wait_for_function("document.getElementById('recsText').textContent.includes('新書甲')")
+    rc = [c for c in calls if c.get('search')]
+    check(len(rc) == 1 and '測試之書' in rc[0]['prompt'] and '不限任何圖書館' in rc[0]['prompt'] and not rc[0]['images'], '自動推介：用搜尋、帶已讀書目、不限圖書館')
+    links = page.eval_on_selector_all('#recsSrc a', 'as => as.map(a => a.href)')
+    check(links == ['https://example.com/new-book'], '推介來源只顯示 http 連結')
+    check(page.evaluate("JSON.parse(localStorage.getItem('reading-log:recs')).text").startswith('書名：新書甲'), '推介存在 reading-log: 前綴鍵')
+    page.reload()
+    page.wait_for_function("document.getElementById('recsText').textContent.includes('新書甲')")
+    page.wait_for_timeout(500)
+    check(len([c for c in calls if c.get('search')]) == 1, '一星期內重新打開不會再搜尋')
+    page.click('#recsBtn')
+    page.wait_for_function("document.getElementById('recsSay').textContent.includes('更新於')")
+    check(len([c for c in calls if c.get('search')]) == 2, '按「更新推介」即重新搜尋')
     check(not errors, '網頁版沒有 JavaScript 錯誤' + (('：' + errors[0]) if errors else ''))
     ctx.close()
 
@@ -174,10 +197,12 @@ def api_check():
     check('gemini-3.8-pro:streamGenerateContent' in o['path'] and o['key'] == 'test-key', 'API：用 Gemini 金鑰，預設先試 Pro')
     check(o['nopro'].get('done') is True and len(o['noproPaths']) == 2 and 'gemini-3.8-flash' in o['noproPaths'][1], 'API：Pro 用不到時自動改用 Flash')
     check(o['parts'][0] == {'inlineData': {'mimeType': 'image/png', 'data': 'AAAA'}} and o['parts'][-1] == {'text': '提問'}, 'API：相片在前、提問在後')
-    check(o['long'] == {'done': True, 'truncated': True, 'stop': 'MAX_TOKENS'}, 'API：答覆過長標示截短')
+    check(o['long'] == {'done': True, 'truncated': True, 'stop': 'MAX_TOKENS', 'sources': []}, 'API：答覆過長標示截短')
     check(o['blocked'] == {'error': 'refused'}, 'API：安全封鎖回報 refused')
     check(o['config'].get('thinkingConfig') == {'thinkingLevel': 'XHIGH'}, 'API：預設要求最高思考深度')
     check(o['nothink'].get('done') is True, 'API：模型不接受思考深度時自動改用預設再試')
+    check(o['searchTools'] == [{'googleSearch': {}}] and o['plainTools'] is None, 'API：只有推介請求才開 Google 搜尋')
+    check(o['search'].get('sources') == [{'title': 'A', 'uri': 'https://example.com/a'}], 'API：搜尋來源去重後回傳')
 
 
 if __name__ == '__main__':

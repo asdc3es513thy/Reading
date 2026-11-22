@@ -186,6 +186,14 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
       <div id="records" style="display:flex;flex-direction:column;gap:10px"></div>
     </section>
 
+    <section class="card" id="recsCard" hidden>
+      <div class="row between"><h2>新書推介</h2><button type="button" id="recsBtn" class="small">更新推介</button></div>
+      <p class="msg">每星期第一次打開會自動更新，也可隨時按「更新推介」。按「當前要解決的問題」和已讀書目，用 Google 搜尋近一年出版的書，不限圖書館館藏。推介本身也是假說：先用 Entry Filter 篩，再決定讀不讀。</p>
+      <p class="msg" id="recsSay" hidden></p>
+      <p class="answer" id="recsText"></p>
+      <ul class="msg" id="recsSrc" hidden></ul>
+    </section>
+
     <section class="card">
       <h2>備份</h2>
       <p class="msg" id="backupHint">匯出備份包含記錄、相片、模型卡和入定推理，可在另一個版本匯入。筆記只有文字，方便交給其他 AI 檢討。</p>
@@ -440,6 +448,7 @@ const CLAUDE_URL = 'https://claude.ai/artifact/BpatGZuPqyWHMYNGSt6ksF', PAGES_UR
 const DRAFT_KEY = 'reading-log:draft-note';
 const S = {entries: [], cards: [], sessions: [], flip: null, db: null, sample: null, assets: null, downloads: null, local: false,
   maxImg: 0, files: [], prevUrls: [], busy: false, ctl: null, open: {}, le: false, lc: false, ls: false,
+  web: false, recsBusy: false, recsTried: false,
   goalLoaded: false, defsLoaded: false, calmTouched: false, form: null, cfBusy: false,
   reveal: {}, rdraft: {}, vdraft: {}, paste: {}};
 
@@ -1329,7 +1338,7 @@ function remoteSample(max){
       images.push({type: (b.type || 'image/jpeg'), data: u.slice(i + 1)});
     }
     let r;
-    try { r = await fetch('api/ask', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({prompt, images, pass}), signal: opts.signal}); }
+    try { r = await fetch('api/ask', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({prompt, images, pass, search: !!opts.search}), signal: opts.signal}); }
     catch (e) { throw {code: e && e.name === 'AbortError' ? 'cancelled' : 'network'}; }
     if (!r.ok) { let c = ''; try { c = (await r.json()).error; } catch (e) {} if (c === 'bad_pass') store(PASS_KEY, ''); throw {code: c || 'upstream'}; }
     const rd = r.body.getReader(), dec = new TextDecoder();
@@ -1354,11 +1363,63 @@ function remoteSample(max){
       throw {code: e && e.name === 'AbortError' ? 'cancelled' : 'network', text};
     }
     if (!end) throw {code: 'network', text};
-    return {text, truncated: !!end.truncated};
+    return {text, truncated: !!end.truncated, sources: Array.isArray(end.sources) ? end.sources : []};
   };
   ask.limits = async () => ({images: {maxCount: max}});
   return ask;
 }
+/* ---------- new-book recommendations (web version only: Gemini + Google Search) ---------- */
+const RECS_KEY = 'reading-log:recs', WEEK = 7 * DAY;
+function readRecs(){ try { const r = JSON.parse(load(RECS_KEY) || 'null'); return r && r.at && typeof r.text === 'string' ? r : null; } catch (e) { return null; } }
+function recsPrompt(){
+  const goal = $('goal').value.trim(), books = [];
+  for (const e of S.entries) { const b = bookOf(e); if (b !== NOBOOK && !books.includes(b)) books.push(b); }
+  return ['你是選書顧問。請先用 Google 搜尋，找出最近 12 個月內出版或即將出版的書（任何語言、任何出版地，不限任何圖書館館藏），推介最多五本，不湊數。',
+    '',
+    goal ? '我當前要解決的問題：' + goal : '我未填當前要解決的問題：請按我讀過的書推斷我的興趣，並在開頭用一句說明你的推斷。',
+    '已讀或已篩過的書：' + (books.length ? books.map(b => '《' + b + '》' + (typeFor(b) ? '（' + typeFor(b) + '）' : '')).join('、') : '暫無'),
+    '',
+    '選書標準（Entry Filter）：對應我的具體問題；同一主題只選證據最強的一本；只有成功案例、沒有失敗樣本的書要降一級並說明。不要推介已讀書目。',
+    '',
+    '每本按此格式：',
+    '書名：原文書名；有中譯本就附中譯名',
+    '作者／出版年月／出版社：',
+    '類型：基礎書或論點書',
+    '核心主張：一句，附作者的理由',
+    '為何適合我：對應我哪個問題或哪本已讀的書',
+    '證據與主要批評：證據類型（研究數據、個人經驗、成功案例）及已知批評',
+    '7 天內第一個驗證訊號：讀完可以做的最小實驗',
+    '',
+    '只寫搜尋結果能支持的資料；出版日期或譯本未能確認就寫「未確認」。用繁體中文書面語，不要開場白和總結。'].join('\n');
+}
+function renderRecs(){
+  const r = readRecs();
+  $('recsText').textContent = r ? r.text : '未有推介。輸入通行碼後按「更新推介」。';
+  const ul = $('recsSrc'); ul.textContent = '';
+  const src = r && Array.isArray(r.sources) ? r.sources : [];
+  for (const x of src) {
+    if (!x || !/^https?:\/\//.test(x.uri || '')) continue;
+    const li = el('li'), a = el('a', 'link', x.title || x.uri); a.href = x.uri; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    li.append(a); ul.append(li);
+  }
+  ul.hidden = !ul.childNodes.length;
+  if (r && !S.recsBusy) msgTo('recsSay', '更新於 ' + fmt(r.at) + (ul.hidden ? '' : '。來源：'));
+}
+async function loadRecs(auto){
+  if (!S.web || S.recsBusy) return;
+  if (auto) { const r = readRecs(); if ((r && Date.now() - r.at < WEEK) || !$('pass').value.trim()) return; }
+  S.recsBusy = true; $('recsBtn').disabled = true; msgTo('recsSay', '搜尋新書中…通常需要半分鐘至兩分鐘。');
+  try {
+    const r = await S.sample(recsPrompt(), {search: true, onText: ({text}) => { $('recsText').textContent = text; }});
+    store(RECS_KEY, JSON.stringify({at: Date.now(), text: r.text, sources: r.sources || []}));
+    S.recsBusy = false; renderRecs();
+  } catch (e) {
+    S.recsBusy = false; renderRecs();
+    msgTo('recsSay', '未能更新推介：' + errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + '）');
+  }
+  $('recsBtn').disabled = false;
+}
+$('recsBtn').onclick = () => loadRecs(false);
 async function detectApi(){
   try {
     const r = await fetch('api/ask', {headers: {accept: 'application/json'}});
@@ -1382,6 +1443,8 @@ async function start(){
   const [db, claudeSample, assets, downloads, api] = await Promise.all([use('db'), use('sample'), use('assets'), use('downloads'), inClaude ? null : detectApi()]);
   const sample = claudeSample || (api ? remoteSample(Math.max(1, Math.min(api.maxImages || 4, 4))) : null);
   if (api) { $('passWrap').hidden = false; $('pass').value = load(PASS_KEY); renderWhere(false, true); }
+  S.web = !!api && !claudeSample;
+  if (S.web) { $('recsCard').hidden = false; renderRecs(); }
   S.sample = sample; S.downloads = downloads;
   if (db) { S.db = db; S.assets = assets; }
   else if (!inClaude && window.indexedDB) {
@@ -1409,6 +1472,7 @@ async function start(){
   const dead = () => { S.le = S.lc = S.ls = true; clearTimeout(timer); renderAll(); notice('記錄庫連線已中斷，請重新打開這個頁面。'); };
   S.db.collection('entries').onSnapshot(s => {
     S.entries = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); S.le = true; loaded();
+    if (S.web && !S.recsTried) { S.recsTried = true; loadRecs(true); }
     renderRecords(); renderCards(); renderPractice(); renderComposer();
   }, dead);
   S.db.collection('cards').onSnapshot(s => {

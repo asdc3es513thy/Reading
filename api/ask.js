@@ -2,7 +2,8 @@
 // 需要在 Vercel 設定環境變數：GEMINI_API_KEY（Google AI Studio 的 API 金鑰）、APP_PASSCODE（通行碼，防止別人用你的額度）。
 // 可選：GEMINI_MODEL（逗號分隔，按次序試；預設先 gemini-3.8-pro，用不到就 gemini-3.8-flash）；
 // GEMINI_THINKING（思考深度 LOW／MEDIUM／HIGH／XHIGH，預設 XHIGH；設為 OFF 則不指定）。
-// 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "..."}，出錯時 {"error": "代碼"}。
+// 請求可加 search: true，讓 Gemini 用 Google 搜尋（新書推介用），答覆最後附來源。
+// 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "...", "sources": [{"title", "uri"}]}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
 const DEFAULT_MODELS = 'gemini-3.8-pro,gemini-3.8-flash';
@@ -45,17 +46,21 @@ export async function POST(request) {
     async start(ctl) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
       try {
-        const res = await openStream(ai, parts, request.signal);
+        const res = await openStream(ai, parts, request.signal, body.search === true);
         let finish = '', blocked = '';
+        const sources = new Map();
         for await (const chunk of res) {
           if (chunk.promptFeedback && chunk.promptFeedback.blockReason) blocked = chunk.promptFeedback.blockReason;
           const c = chunk.candidates && chunk.candidates[0];
           if (c && c.finishReason) finish = c.finishReason;
+          for (const g of (c && c.groundingMetadata && c.groundingMetadata.groundingChunks) || []) {
+            if (g.web && g.web.uri && !sources.has(g.web.uri) && sources.size < 20) sources.set(g.web.uri, {title: g.web.title || g.web.uri, uri: g.web.uri});
+          }
           const t = chunk.text;
           if (t) send({t});
         }
         if (blocked || BLOCKED.has(finish)) send({error: 'refused'});
-        else send({done: true, truncated: finish === 'MAX_TOKENS', stop: finish});
+        else send({done: true, truncated: finish === 'MAX_TOKENS', stop: finish, sources: [...sources.values()]});
       } catch (e) {
         send({error: errorCode(e)});
       }
@@ -67,13 +72,14 @@ export async function POST(request) {
 
 // 按次序試每個模型：型號不存在、無權限或額度用完（404／403／429）就試下一個；
 // 不接受指定思考深度（400）就用該模型預設再試一次。
-async function openStream(ai, parts, signal) {
+async function openStream(ai, parts, signal, search) {
   const models = (process.env.GEMINI_MODEL || DEFAULT_MODELS).split(',').map(m => m.trim()).filter(Boolean);
   const level = (process.env.GEMINI_THINKING || 'XHIGH').trim().toUpperCase();
   let last;
   for (const model of models) {
     const config = {maxOutputTokens: 32000, abortSignal: signal};
     if (level !== 'OFF') config.thinkingConfig = {thinkingLevel: level};
+    if (search) config.tools = [{googleSearch: {}}];
     for (;;) {
       try { return await ai.models.generateContentStream({model, contents: [{role: 'user', parts}], config}); }
       catch (e) {

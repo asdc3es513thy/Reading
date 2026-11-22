@@ -60,6 +60,7 @@ def main():
 
         check(page.is_visible('#askBtn') and page.is_hidden('#copyBtn'), '有 Claude：顯示「核對我的重述」')
         check(page.is_hidden('#notice'), '沒有錯誤提示')
+        check(page.is_hidden('#recsCard'), 'Claude 版不顯示新書推介（沒有搜尋）')
 
         # 內文頁：未有相片、重述不足都不可送出
         page.fill('#note', NOTE)

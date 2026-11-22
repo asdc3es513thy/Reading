@@ -20,6 +20,11 @@ const fake = http.createServer((req, res) => {
     }
     res.writeHead(200, {'content-type': 'text/event-stream'});
     if (mode === 'blocked') { res.write(chunk('', 'SAFETY')); return res.end(); }
+    if (mode === 'search') {
+      res.write(`data: ${JSON.stringify({candidates: [{content: {role: 'model', parts: [{text: '書名：新書'}]}, finishReason: 'STOP',
+        groundingMetadata: {groundingChunks: [{web: {uri: 'https://example.com/a', title: 'A'}}, {web: {uri: 'https://example.com/a', title: 'A'}}]}}]})}\r\n\r\n`);
+      return res.end();
+    }
     res.write(chunk('書名：《測試》\n'));
     res.write(chunk('【核對】一。', mode === 'long' ? 'MAX_TOKENS' : 'STOP'));
     res.end();
@@ -59,6 +64,11 @@ mode = 'nopro';
 const before = seen.length;
 out.nopro = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 out.noproPaths = seen.slice(before).map(x => x.path);
+mode = 'search';
+const b2 = seen.length;
+out.search = (await (await post({pass: 'secret', prompt: 'p', search: true})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
+out.searchTools = seen[b2].body.tools;
+out.plainTools = seen[0].body.tools || null;
 mode = 'blocked';
 out.blocked = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 
