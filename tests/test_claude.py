@@ -85,6 +85,7 @@ def main():
         page.check('#modeB')
         page.set_input_files('#file', img)
         check(page.is_enabled('#askBtn'), '篩書模式有相片即可送出')
+        check(page.inner_text('#askBtn') == '篩書：核心主張', '篩書按鈕名稱')
         page.click('#askBtn')
         page.wait_for_function('window.__claude.samples.length === 2')
         s = page.evaluate('window.__claude.samples[1]')

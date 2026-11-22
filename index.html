@@ -434,7 +434,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-22 · 1e358e3 · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-22 · bae180a · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -654,7 +654,7 @@ function renderComposer(){
     : '未讀內文時用：不用重述，直接取得核心主張、批評，和這本書值不值得讀。';
   $('noteCount').textContent = '已寫 ' + n + ' 字（最少 ' + MIN_NOTE + ' 字）';
   $('pickText').textContent = S.files.length ? '已選 ' + S.files.length + ' 張，按此重選' : (mode === 'A' ? '② 打開書，影這一頁' : '＋ 影封面、目錄或前言');
-  $('askBtn').textContent = mode === 'A' ? '核對我的重述' : '篩書：核心主張與批評';
+  $('askBtn').textContent = mode === 'A' ? '核對我的重述' : '篩書：核心主張';
   $('askBtn').disabled = $('copyBtn').disabled = S.busy || !g.ok;
   $('saveOnlyBtn').disabled = S.busy || (!S.files.length && !(mode === 'A' && n));
   msgTo('gateMsg', g.msg);

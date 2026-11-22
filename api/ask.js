@@ -28,7 +28,7 @@ class ProviderError extends Error {
 }
 // 可以改用下一個型號／引擎的狀態：無權限、型號不存在、逾時、額度用完、伺服器出錯或太忙
 const RETRYABLE = s => [403, 404, 408, 429, 500, 502, 503, 504].includes(s);
-const short = m => String(m || '').replace(/\s+/g, ' ').slice(0, 100);
+const short = m => String(m || '').replace(/\s+/g, ' ').slice(0, 160);
 
 export function GET() {
   return json(200, {app: '睇書記錄', configured: configured(), maxImages: MAX_IMAGES, providers: providers()});
@@ -55,7 +55,8 @@ export async function POST(request) {
     async start(ctl) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
       const fail = (e, p) => send({error: errorCode(e), detail: detailOf(e, p)});
-      let last = null, lastP = '';
+      let last = null;
+      const errs = [];
       // 按次序試每個引擎；未送出任何文字之前出錯，都改用下一個
       for (const p of order) {
         let opened, sent = false;
@@ -72,10 +73,10 @@ export async function POST(request) {
         } catch (e) {
           if (e && e.name === 'AbortError') { send({error: 'cancelled'}); ctl.close(); return; }
           if (sent) { fail(e, p); ctl.close(); return; }
-          last = e; lastP = p;
+          last = e; errs.push(detailOf(e, p));
         }
       }
-      fail(last, lastP);
+      send({error: errorCode(last), detail: errs.join('；')});
       ctl.close();
     }
   });

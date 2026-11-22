@@ -226,7 +226,7 @@ def api_check():
     check(o['ghRedirect'].get('provider') == 'github' and o['ghRedirectReq'][:2] == ['POST /inference/chat/completions', 'POST /inference2/chat/completions'], 'API：GitHub 轉址後仍用 POST 送出提問')
     check(o['ghEmpty'].get('provider') == 'gemini', 'API：GitHub 沒有文字時改用 Gemini')
     check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'github', 'API：GitHub 一次過 JSON 答覆也讀得到')
-    check(o['allDown'].get('error') == 'upstream' and 'gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時回報引擎和狀態碼')
+    check(o['allDown'].get('error') == 'upstream' and o['allDown'].get('detail', '').startswith('github 500') and '；gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時列出每個引擎的原因')
     check(o['quota'].get('error') == 'rate_limited' and o['quota'].get('detail') == 'gemini 429 You exceeded your current quota, please check your plan.', 'API：錯誤原因只顯示最內層訊息')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')
 
