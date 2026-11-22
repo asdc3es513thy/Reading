@@ -8,7 +8,7 @@
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "...", "sources": [...], "provider": "...", "model": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
-const GITHUB_URLS = 'https://models.github.ai/inference/chat/completions,https://models.inference.ai.azure.com/chat/completions';
+const GITHUB_URLS = 'https://models.github.ai/inference/chat/completions';
 const GITHUB_DEFAULT = 'openai/gpt-4.1,openai/o4-mini';
 const GEMINI_DEFAULT = 'gemini-3.8-pro,gemini-3.8-flash';
 const MAX_IMAGES = 4;
@@ -108,24 +108,30 @@ async function openGithubAt(url, images, prompt, signal) {
   let last = new ProviderError('upstream');
   for (const m of list(process.env.GITHUB_MODELS, GITHUB_DEFAULT)) {
     const model = /azure/i.test(url) ? m.replace(/^[^/]+\//, '') : m;
-    let r;
-    try {
-      r = await postFollow(url, {
-        authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        'content-type': 'application/json',
-        accept: 'application/vnd.github+json',
-        'x-github-api-version': '2022-11-28',
-        'user-agent': 'reading-log'
-      }, JSON.stringify({model, stream: true, messages: [{role: 'user', content}]}), signal);
-    } catch (e) {
-      if (e && e.name === 'AbortError') throw e;
-      last = new ProviderError('network', 0, `${host} ${short(e && e.message)}`);
-      continue;
+    let r, ct = '', txt = '', plain = false;
+    // 先試串流；回覆不是答覆（例如純文字「OK」）就改用非串流再試一次
+    for (const stream of [true, false]) {
+      try {
+        r = await postFollow(url, {
+          authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          'content-type': 'application/json',
+          accept: stream ? 'text/event-stream' : 'application/json',
+          'x-github-api-version': '2022-11-28',
+          'user-agent': 'reading-log'
+        }, JSON.stringify({model, stream, messages: [{role: 'user', content}]}), signal);
+      } catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        r = null; last = new ProviderError('network', 0, `${host} ${short(e && e.message)}`);
+        break;
+      }
+      ct = r.headers.get('content-type') || '';
+      if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'github', model, events: githubEvents(r)};
+      txt = await r.text().catch(() => '');
+      plain = r.ok;
+      if (!plain) break;
     }
-    const ct = r.headers.get('content-type') || '';
-    if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'github', model, events: githubEvents(r)};
-    const txt = await r.text().catch(() => '');
-    if (r.ok) { last = new ProviderError('upstream', r.status, `${host} ${model} 回覆不是答覆（${ct}）${short(txt)}`); continue; }
+    if (!r) continue;
+    if (plain) { last = new ProviderError('upstream', r.status, `${host} ${model} 回覆不是答覆（${ct}）${short(txt)}`); continue; }
     last = new ProviderError(
       r.status === 401 || r.status === 403 ? 'server_key'
         : r.status === 429 ? 'rate_limited'

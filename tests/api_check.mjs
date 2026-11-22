@@ -16,6 +16,7 @@ const fake = http.createServer((req, res) => {
     }
     if (req.url.startsWith('/inference2/') && req.method !== 'POST') { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
     if (req.url.startsWith('/inference/') && mode === 'ghok') { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
+    if (req.url.startsWith('/inference/') && mode === 'ghokstream' && JSON.parse(body).stream) { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
     if (req.url.startsWith('/azure/')) {
       res.writeHead(200, {'content-type': 'text/event-stream'});
       res.write(`data: ${JSON.stringify({choices: [{index: 0, delta: {content: '書名：《Azure》'}, finish_reason: 'stop'}]})}\n\ndata: [DONE]\n\n`);
@@ -150,6 +151,10 @@ b4 = seen.length;
 out.ghOk = (await last({pass: 'secret', prompt: 'p'})).pop();
 out.ghOkReq = seen.slice(b4).map(x => x.path.split('?')[0] + ' ' + x.body.model + ' ' + (x.ua || ''));
 process.env.GITHUB_MODELS_URL = `http://127.0.0.1:${fake.address().port}/inference/chat/completions`;
+mode = 'ghokstream';
+b4 = seen.length;
+out.ghOkStream = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.ghOkStreamReq = seen.slice(b4).map(x => String(x.body.stream));
 mode = 'ghempty';
 out.ghEmpty = (await last({pass: 'secret', prompt: 'p'})).pop();
 mode = 'ghjson';

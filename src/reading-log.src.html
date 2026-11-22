@@ -1371,7 +1371,7 @@ function remoteSample(max){
   return ask;
 }
 /* ---------- new-book recommendations (web version only: Gemini + Google Search) ---------- */
-const RECS_KEY = 'reading-log:recs', WEEK = 7 * DAY;
+const RECS_KEY = 'reading-log:recs', RECS_TRY_KEY = 'reading-log:recs-tried', WEEK = 7 * DAY;
 function readRecs(){ try { const r = JSON.parse(load(RECS_KEY) || 'null'); return r && r.at && typeof r.text === 'string' ? r : null; } catch (e) { return null; } }
 function recsPrompt(){
   const goal = $('goal').value.trim(), books = [];
@@ -1409,7 +1409,11 @@ function renderRecs(){
 }
 async function loadRecs(auto){
   if (!S.web || S.recsBusy) return;
-  if (auto) { const r = readRecs(); if ((r && Date.now() - r.at < WEEK) || !$('pass').value.trim()) return; }
+  if (auto) {
+    const r = readRecs(), tried = +load(RECS_TRY_KEY) || 0;
+    if ((r && Date.now() - r.at < WEEK) || !$('pass').value.trim() || Date.now() - tried < 12 * 36e5) return;
+  }
+  store(RECS_TRY_KEY, String(Date.now()));
   S.recsBusy = true; $('recsBtn').disabled = true; msgTo('recsSay', '搜尋新書中…通常需要半分鐘至兩分鐘。');
   try {
     const r = await S.sample(recsPrompt(), {search: true, onText: ({text}) => { $('recsText').textContent = text; }});
