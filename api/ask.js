@@ -193,10 +193,30 @@ async function* geminiEvents(res) {
   yield {end: true, truncated: finish === 'MAX_TOKENS', refused: !!blocked || BLOCKED.has(finish), stop: finish, sources: [...sources.values()]};
 }
 
+// 從（可能多層包住的）JSON 錯誤字串抽出最內層的 message
+function innerMessage(m) {
+  let t = String(m || '');
+  for (let i = 0; i < 4; i++) {
+    const k = t.indexOf('{');
+    if (k < 0) break;
+    try {
+      const j = JSON.parse(t.slice(k));
+      const msg = (j.error && (j.error.message || j.error.code)) || j.message;
+      if (!msg || typeof msg !== 'string') break;
+      t = msg;
+    } catch (e) {
+      const mm = /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(t);
+      if (mm) t = mm[1].replace(/\\n/g, ' ').replace(/\\"/g, '"');
+      break;
+    }
+  }
+  return t;
+}
+
 function detailOf(e, p) {
   if (!e) return p || '';
   const st = e.status ? ' ' + e.status : '';
-  return short(`${p || ''}${st} ${e.detail || (e instanceof ApiError ? e.message : e.message || '')}`).trim();
+  return short(`${p || ''}${st} ${innerMessage(e.detail || e.message || '')}`).trim();
 }
 
 function errorCode(e) {

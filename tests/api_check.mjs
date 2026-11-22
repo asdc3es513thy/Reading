@@ -26,6 +26,10 @@ const fake = http.createServer((req, res) => {
       res.write('data: [DONE]\n\n');
       return res.end();
     }
+    if (mode === 'quota' && !req.url.startsWith('/inference/')) {
+      res.writeHead(429, {'content-type': 'application/json'});
+      return res.end(JSON.stringify({error: {code: 429, message: 'You exceeded your current quota, please check your plan.', status: 'RESOURCE_EXHAUSTED'}}));
+    }
     if (mode === 'alldown' || (mode === 'pro503' && req.url.includes('gemini-3.8-pro'))) {
       res.writeHead(503, {'content-type': 'application/json'});
       return res.end(JSON.stringify({error: {code: 503, message: 'The model is overloaded. Please try again later.', status: 'UNAVAILABLE'}}));
@@ -118,6 +122,10 @@ mode = 'ghstreamerr';
 out.ghStreamErr = (await last({pass: 'secret', prompt: 'p'})).pop();
 mode = 'alldown';
 out.allDown = (await last({pass: 'secret', prompt: 'p'})).pop();
+delete process.env.GITHUB_TOKEN;
+mode = 'quota';
+out.quota = (await last({pass: 'secret', prompt: 'p'})).pop();
+process.env.GITHUB_TOKEN = 'gh-test';
 delete process.env.GEMINI_API_KEY;
 out.ghOnlyGet = (await api.GET().json()).providers;
 

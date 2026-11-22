@@ -214,6 +214,7 @@ def api_check():
     check(o['pro503'].get('model') == 'gemini-3.8-flash', 'API：Gemini Pro 太忙（503）時改用 Flash')
     check(o['ghStreamErr'].get('provider') == 'gemini', 'API：GitHub 未出文字就斷線時改用 Gemini')
     check(o['allDown'].get('error') == 'upstream' and 'gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時回報引擎和狀態碼')
+    check(o['quota'].get('error') == 'rate_limited' and o['quota'].get('detail') == 'gemini 429 You exceeded your current quota, please check your plan.', 'API：錯誤原因只顯示最內層訊息')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')
 
 
