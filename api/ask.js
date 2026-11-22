@@ -2,13 +2,13 @@
 // 主引擎：GitHub Models（環境變數 GITHUB_TOKEN，fine-grained token，只需 Models: Read）；
 // 後備：Google Gemini（GEMINI_API_KEY）。另需 APP_PASSCODE（通行碼，防止別人用你的額度）。
 // 兩個金鑰設一個也可以；都設時，GitHub 出錯、額度用完或輸入太長，就自動改用 Gemini。
-// 可選：GITHUB_MODELS（逗號分隔，按次序試；預設 openai/gpt-4.1,openai/o4-mini）；
+// 可選：GITHUB_MODELS（逗號分隔，按次序試；預設 openai/gpt-4.1,openai/o4-mini）；GITHUB_MODELS_URL（入口，逗號分隔）；
 // GEMINI_MODEL（預設 gemini-3.8-pro,gemini-3.8-flash）；GEMINI_THINKING（LOW／MEDIUM／HIGH／XHIGH／OFF，預設 XHIGH）。
 // 請求可加 search: true（新書推介）：要用 Google 搜尋，所以先用 Gemini，GitHub 做後備（後備沒有搜尋）。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "...", "sources": [...], "provider": "...", "model": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
-const GITHUB_URL = 'https://models.github.ai/inference/chat/completions';
+const GITHUB_URLS = 'https://models.github.ai/inference/chat/completions,https://models.inference.ai.azure.com/chat/completions';
 const GITHUB_DEFAULT = 'openai/gpt-4.1,openai/o4-mini';
 const GEMINI_DEFAULT = 'gemini-3.8-pro,gemini-3.8-flash';
 const MAX_IMAGES = 4;
@@ -84,35 +84,54 @@ export async function POST(request) {
 }
 
 /* ---------- GitHub Models（OpenAI 格式的 chat completions，SSE 串流）---------- */
+// 兩個入口按次序試：models.github.ai（型號名有 openai/ 前綴），舊入口 models.inference.ai.azure.com（型號名無前綴）
 async function openGithub(images, prompt, signal) {
-  const url = process.env.GITHUB_MODELS_URL || GITHUB_URL;
+  const urls = list(process.env.GITHUB_MODELS_URL, GITHUB_URLS);
+  const errs = [];
+  for (const url of urls) {
+    try { return await openGithubAt(url, images, prompt, signal); }
+    catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      errs.push(e);
+    }
+  }
+  const last = errs[errs.length - 1] || new ProviderError('upstream');
+  throw new ProviderError(last.code || 'upstream', last.status, errs.map(e => e.detail || e.message).join(' ／ '));
+}
+
+async function openGithubAt(url, images, prompt, signal) {
+  const host = new URL(url).host;
   const content = [
     ...images.map(im => ({type: 'image_url', image_url: {url: `data:${im.type};base64,${im.data}`}})),
     {type: 'text', text: prompt}
   ];
   let last = new ProviderError('upstream');
-  for (const model of list(process.env.GITHUB_MODELS, GITHUB_DEFAULT)) {
+  for (const m of list(process.env.GITHUB_MODELS, GITHUB_DEFAULT)) {
+    const model = /azure/i.test(url) ? m.replace(/^[^/]+\//, '') : m;
     let r;
     try {
       r = await postFollow(url, {
         authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
         'content-type': 'application/json',
         accept: 'application/vnd.github+json',
-        'x-github-api-version': '2022-11-28'
+        'x-github-api-version': '2022-11-28',
+        'user-agent': 'reading-log'
       }, JSON.stringify({model, stream: true, messages: [{role: 'user', content}]}), signal);
     } catch (e) {
       if (e && e.name === 'AbortError') throw e;
-      last = new ProviderError('network', 0, short(e && e.message));
+      last = new ProviderError('network', 0, `${host} ${short(e && e.message)}`);
       continue;
     }
-    if (r.ok && r.body) return {name: 'github', model, events: githubEvents(r)};
+    const ct = r.headers.get('content-type') || '';
+    if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'github', model, events: githubEvents(r)};
     const txt = await r.text().catch(() => '');
+    if (r.ok) { last = new ProviderError('upstream', r.status, `${host} ${model} 回覆不是答覆（${ct}）${short(txt)}`); continue; }
     last = new ProviderError(
       r.status === 401 || r.status === 403 ? 'server_key'
         : r.status === 429 ? 'rate_limited'
         : r.status === 413 || /token.*(limit|large)|too large/i.test(txt) ? 'prompt_too_large'
         : r.status === 400 && /image/i.test(txt) ? 'image_rejected'
-        : 'upstream', r.status, `${model} ${short(txt)}`);
+        : 'upstream', r.status, `${host} ${model} ${innerMessage(txt)}`);
   }
   throw last;
 }
