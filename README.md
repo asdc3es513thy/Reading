@@ -8,11 +8,20 @@
 
 兩個版本由同一份原始檔產生，功能和方法相同，分別在於答覆和記錄存放：
 
-| | Claude 版（主力） | GitHub 版（備用） |
-|---|---|---|
-| 打開 | Claude app → Artifacts →「睇書記錄」 | https://asdc3es513thy.github.io/Reading/ |
-| 上載後答覆 | 自動 | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
-| 記錄存放 | 你的 Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 |
+| | Claude 版（主力） | Vercel 網頁版 | GitHub 版（備用） |
+|---|---|---|---|
+| 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
+| 上載後答覆 | 自動 | 自動（輸入通行碼，經 `api/ask.js` 用你的 API 金鑰） | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
+| 記錄存放 | 你的 Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
+
+### Vercel 網頁版設定
+
+在 Vercel 專案 → Settings → Environment Variables 加兩個變數，然後 Redeploy：
+
+- `ANTHROPIC_API_KEY`：Anthropic API 金鑰（console.anthropic.com 建立，按用量收費，與 Claude 訂閱分開）。
+- `APP_PASSCODE`：自訂通行碼。網址是公開的，沒有通行碼的人不能用你的額度。
+
+未設定時，網頁版自動退回「複製提問文字」模式。
 
 頁底會顯示版本號。兩邊版本號相同，即代表已同步。
 
@@ -40,11 +49,14 @@
 | `METHOD.md` | 方法全文（由 `build.py` 從頁面產生，不要手改） |
 | `src/reading-log.src.html` | 唯一原始檔 |
 | `src/bg.jpg`、`src/VERSION` | 背景相片、發佈日期 |
+| `api/ask.js`、`package.json`、`vercel.json` | Vercel 網頁版的答覆函數（模型 `claude-opus-5-5`） |
 | `build.py` | 產生 `index.html`、`METHOD.md` 和 Claude 版（`dist/`） |
-| `tests/` | 實際開瀏覽器的測試：`test_local.py` 測 GitHub 版，`test_claude.py` 測 Claude 版 |
+| `tests/` | 實際開瀏覽器的測試：`test_local.py` 測 GitHub 版、Vercel 網頁版和 `api/ask.js`，`test_claude.py` 測 Claude 版 |
 | `CLAUDE.md` | 給 Claude 的更新守則 |
 
 ## 更新記錄
+
+- **2026-11-22（二）**：新增 Vercel 網頁版直接答覆（`api/ask.js`＋通行碼）；repo 加入 `src/`、`build.py`、`tests/`。
 
 - **2026-11-22**：按 Gemini 覆核及 Claude 驗證更新。上載改為雙模式（內文先重述後核對、封面直接篩書）；答覆由 9 節精簡為 5 節；新增模型卡、到期回填和間隔複習；迴路指標改為追蹤建卡、回填、修正；入定實驗改用擲硬幣分配；新增匯出和匯入；頁底加版本號和兩版連結；repo 改為單一原始檔。
 - **2026-11-14**：首版：上載書頁取得答覆、按書和章節分層記錄、方法全文、入定・推理分頁、宇宙背景。

@@ -5,6 +5,9 @@ __pycache__/
 
 # repo 公開：不要 commit 用戶備份、筆記、書頁相片
 *.json
+!package.json
+!package-lock.json
+!vercel.json
 睇書筆記-*.md
 *.jpg
 *.jpeg
@@ -12,3 +15,6 @@ __pycache__/
 *.webp
 *.heic
 !src/bg.jpg
+
+# npm
+node_modules/

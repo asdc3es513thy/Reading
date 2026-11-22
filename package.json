@@ -1,0 +1,8 @@
+{
+  "name": "reading-log",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.12.0"
+  }
+}

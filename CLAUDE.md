@@ -7,7 +7,8 @@
 - `src/reading-log.src.html`：唯一原始檔（HTML＋CSS＋JS）。`@@BG@@`、`@@VERSION@@` 由 `build.py` 代入。
 - `src/bg.jpg`：宇宙背景相片。`src/VERSION`：發佈日期，每次發佈改為當日。
 - `build.py`：產生 `index.html`（GitHub Pages 版，commit）、`dist/reading-log.html`（Claude 版，不 commit）、`METHOD.md`（方法全文，commit）。
-- 同一份程式碼兩種運行方式：有 `window.claude` 就用 Claude 的 `db`、`sample`、`assets`、`downloads`；沒有就用瀏覽器 IndexedDB（資料庫名 `reading-log`），答覆改為複製提問文字、貼上答覆。
+- 同一份程式碼三種運行方式：有 `window.claude` 就用 Claude 的 `db`、`sample`、`assets`、`downloads`；沒有就用瀏覽器 IndexedDB（資料庫名 `reading-log`），答覆改為複製提問文字、貼上答覆。
+- Vercel 網頁版：同網站有 `api/ask`（`api/ask.js`，環境變數 `ANTHROPIC_API_KEY`、`APP_PASSCODE`）就經它取得答覆，記錄仍用 IndexedDB；GitHub Pages 沒有這個路徑，維持複製模式。
 
 ## 更新流程
 

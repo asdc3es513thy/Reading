@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """GitHub 版（index.html）：沒有 window.claude，用 IndexedDB，答覆靠複製提問、貼上答覆。"""
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -100,9 +101,78 @@ def main():
         check(True, '沒有 mode、cover 的舊記錄可匯入')
 
         check(not errors, '沒有 JavaScript 錯誤' + (('：' + errors[0]) if errors else ''))
+        web_mode(b, url, img)
         b.close()
     srv.shutdown()
+    api_check()
     finish()
+
+
+def web_mode(b, url, img):
+    """Vercel 網頁版：/api/ask 存在時，按「核對我的重述」即經本網站取得答覆。"""
+    calls = []
+
+    def handle(route):
+        r = route.request
+        if r.method == 'GET':
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'app': '睇書記錄', 'configured': True, 'maxImages': 4}))
+        body = json.loads(r.post_data)
+        calls.append(body)
+        if body.get('pass') != 'secret':
+            return route.fulfill(status=401, content_type='application/json', body='{"error":"bad_pass"}')
+        lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), '{"done":true,"truncated":false}']
+        return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
+
+    ctx = b.new_context()
+    page = ctx.new_page()
+    errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.route('**/api/ask', handle)
+    page.goto(url + 'index.html')
+    page.wait_for_function("document.getElementById('whereAmI').textContent.includes('網頁版')")
+    check(page.is_visible('#askBtn') and page.is_hidden('#copyBtn') and page.is_visible('#pass'), '網頁版：顯示「核對我的重述」和通行碼欄')
+
+    page.set_input_files('#file', img)
+    page.fill('#note', NOTE)
+    page.click('#askBtn')
+    page.wait_for_function("document.getElementById('say').textContent.includes('通行碼')")
+    check(not calls, '未輸入通行碼不會送出')
+
+    page.fill('#pass', 'wrong')
+    page.click('#askBtn')
+    page.wait_for_function("document.getElementById('say').textContent.includes('通行碼不正確')")
+    check(page.evaluate("document.querySelectorAll('#records article').length") == 0, '通行碼錯誤時沒有儲存')
+
+    page.fill('#pass', 'secret')
+    page.click('#askBtn')
+    page.wait_for_function("document.getElementById('records').textContent.includes('測試之書')")
+    last = calls[-1]
+    check(NOTE in last['prompt'] and '【核對】' in last['prompt'] and len(last['images']) == 1 and last['images'][0]['type'] in ('image/jpeg', 'image/png') and last['images'][0]['data'], '網頁版提問含重述、【核對】及相片')
+    say = page.inner_text('#say')
+    check('覆蓋 2/3' in say and '講錯 1' in say, '網頁版答覆解析出覆蓋和講錯')
+    check(page.evaluate("localStorage.getItem('reading-log:api-pass')") == 'secret', '通行碼記在 reading-log: 前綴鍵')
+    page.reload()
+    page.wait_for_function("document.getElementById('records').textContent.includes('測試之書')")
+    check(page.input_value('#pass') == 'secret', '重新載入後記得通行碼，記錄仍在')
+    check(not errors, '網頁版沒有 JavaScript 錯誤' + (('：' + errors[0]) if errors else ''))
+    ctx.close()
+
+
+def api_check():
+    """api/ask.js：用假 Anthropic 伺服器測試，不花額度。"""
+    if not (ROOT / 'node_modules' / '@anthropic-ai' / 'sdk').exists():
+        subprocess.run(['npm', 'install', '--silent'], cwd=ROOT, check=True)
+    r = subprocess.run(['node', 'tests/api_check.mjs'], cwd=ROOT, capture_output=True, text=True, timeout=60)
+    if r.returncode:
+        check(False, 'api/ask.js 可執行：' + r.stderr[-300:])
+        return
+    o = json.loads(r.stdout)
+    check(o['unconfiguredGet'] is False and o['unconfiguredPost'] == 503, 'API：未設定金鑰和通行碼時拒絕')
+    check(o['configuredGet'] is True and o['wrongPass'] == 401, 'API：通行碼錯誤回 401')
+    check(o['noPrompt'] == 400 and o['tooMany'] == 413 and o['badType'] == 400, 'API：無效提問和相片被拒')
+    check(o['okStatus'] == 200 and o['lines'][-1].get('done') and ''.join(l.get('t', '') for l in o['lines']) == '書名：《測試》\n【核對】一。', 'API：串流答覆完整')
+    check(o['model'] == 'claude-opus-5-5' and o['fallbacks'] == 'default' and 'server-side-fallback' in o['beta'], 'API：模型與 fallback 設定')
+    check(o['content'][0]['type'] == 'image' and o['content'][-1] == {'type': 'text', 'text': '提問'}, 'API：相片在前、提問在後')
 
 
 if __name__ == '__main__':
