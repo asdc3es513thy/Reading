@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>睇書記錄</title>
+<style>
+/* Layout: one narrow working column over a fixed space photograph; four views switched by hash tabs. */
+:root{
+  --bg:#070b10; --surface:rgba(13,19,25,.22); --veil:rgba(13,19,25,.22); --ink:#e8eef0; --muted:#c3cfd1; --line:rgba(255,255,255,.0001);
+  --accent:#6fd0c0; --accent-ink:#04201c; --soft:rgba(111,208,192,.13); --danger:#f2877f; --danger-ink:#2a0d0a; --warn-soft:rgba(242,135,127,.16);
+  --btn:rgba(255,255,255,.07); --field:rgba(0,0,0,.26);
+  --font:"PingFang HK","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:10px; color-scheme:dark;
+}
+body::before{content:"";position:fixed;inset:0;z-index:-1;
+  background:linear-gradient(rgba(5,8,12,.08),rgba(5,8,12,.38) 55%,rgba(5,8,12,.55)),url(data:image/jpeg;base64,@@BG@@) center top/cover no-repeat #070b10}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+.wrap{max-width:720px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  display:flex;flex-direction:column;gap:20px}
+h1{font-size:1.5rem;margin:0;letter-spacing:.02em}
+h2{font-size:1.05rem;margin:0}
+h3{font-size:.95rem;margin:0}
+.sub{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.spacer{flex:1}
+.acts{display:flex;gap:8px;margin-left:auto}
+.foot{display:flex;flex-direction:column;gap:4px;padding-top:4px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card,details.chap,.notice,.tabs{-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.notice{margin:0;padding:10px 12px;border-radius:var(--r);background:var(--veil);font-size:.9rem;color:var(--ink);text-decoration:none;display:block}
+a.notice{background:var(--warn-soft);font-weight:600}
+.msg{color:var(--muted);font-size:.9rem;margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+button,label.btn{cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--btn);padding:8px 12px;min-height:40px}
+label.btn{display:inline-flex;align-items:center;position:relative}
+label.btn input{position:absolute;opacity:0;width:1px;height:1px}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,label.pick:focus-within,label.btn:focus-within,.tabs a:focus-visible,a.notice:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;text-shadow:none}
+button.small{min-height:32px;padding:4px 10px;font-size:.85rem}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.45;cursor:default}
+input[type=text],input[type=number],input[type=date],textarea,select{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:9px 10px;min-height:40px}
+textarea{resize:vertical;min-height:72px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted);min-width:0}
+label.f>*{color:var(--ink);font-size:1rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:460px){.grid2{grid-template-columns:1fr}}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--veil);padding:4px;border-radius:12px}
+@media (max-width:520px){.tabs{grid-template-columns:1fr 1fr}}
+.tabs a{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 4px;font-size:.92rem;border-radius:9px;color:var(--ink);text-decoration:none;font-weight:600}
+.tabs a.on{background:rgba(111,208,192,.16);color:var(--accent)}
+.badge{min-width:1.5em;padding:0 6px;border-radius:999px;background:var(--danger);color:var(--danger-ink);font-size:.75rem;line-height:1.6;text-align:center;text-shadow:none}
+.view{display:flex;flex-direction:column;gap:20px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;border:0;margin:0;padding:0;min-width:0}
+@media (max-width:420px){.seg{grid-template-columns:1fr}}
+.seg legend{font-size:.85rem;color:var(--muted);padding:0;margin-bottom:6px}
+.seg label{display:flex;position:relative}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg span{flex:1;text-align:center;padding:9px 8px;border-radius:8px;background:var(--btn);font-weight:600;font-size:.92rem;cursor:pointer}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink);text-shadow:none}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field>label{font-size:.85rem;color:var(--muted)}
+label.pick{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed var(--accent);border-radius:var(--r);
+  padding:16px;color:var(--accent);font-weight:600;cursor:pointer;background:var(--soft);text-align:center;position:relative}
+label.pick input{position:absolute;opacity:0;width:1px;height:1px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
+.thumbs img.big{width:100%;height:auto;object-fit:contain;cursor:zoom-out}
+.thumbs.nozoom img{cursor:default}
+details.opt>summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+details.opt>label{margin-top:8px}
+.check{display:flex;gap:8px;align-items:center;font-size:.92rem}
+.check input{width:18px;height:18px;flex:none}
+.live{display:flex;flex-direction:column;gap:8px}
+.answer{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.95rem;margin:0}
+.tag{display:inline-block;padding:1px 9px;border-radius:999px;background:var(--soft);color:var(--accent);font-size:.78rem;font-weight:600;text-shadow:none}
+.tag.warn{background:var(--warn-soft);color:var(--danger)}
+.tag.dim{background:var(--btn);color:var(--muted)}
+.bk{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-top:8px}
+.bk h3{overflow-wrap:anywhere;min-width:0}
+details.chap{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);min-width:0}
+details.chap>summary{cursor:pointer;padding:12px 14px;font-weight:600;display:flex;justify-content:space-between;gap:8px;list-style:none}
+details.chap>summary::-webkit-details-marker{display:none}
+details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;white-space:nowrap}
+.entries{display:flex;flex-direction:column}
+.entry{border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.time{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.lbl{color:var(--muted);font-size:.8rem;margin:0}
+.mine{margin:0;padding-left:10px;border-left:3px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;font-size:.92rem}
+.chk{border-left:3px solid var(--danger);padding:8px 10px;background:var(--warn-soft);border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:4px;font-size:.9rem;min-width:0}
+.chk p{margin:0}
+.chk ul{margin:0;padding-left:1.2em}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;background:var(--veil)}
+.stat b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.stat span{font-size:.8rem;color:var(--muted)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.92rem}
+.kv dt{color:var(--muted);white-space:nowrap}
+.kv dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+@media (max-width:460px){.kv{grid-template-columns:1fr;gap:0}.kv dd{margin-bottom:8px}}
+.vform{display:flex;flex-direction:column;gap:10px}
+.grp{margin-top:6px;color:var(--accent)}
+.clist{display:flex;flex-direction:column;gap:12px}
+.src{font-size:.9rem;display:flex;flex-direction:column;gap:6px}
+.src details>summary{cursor:pointer;color:var(--muted)}
+.link{color:var(--accent);font-size:.85rem}
+.method p{margin:0}
+.method ul,.method ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.method .lead{font-size:1rem}
+.method .key{padding:10px 12px;border-radius:var(--r);background:var(--soft)}
+.method h3{color:var(--accent)}
+.tw{overflow-x:auto;min-width:0}
+.tw table{border-collapse:collapse;width:100%;min-width:480px;font-size:.9rem}
+.tw th,.tw td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+.tw th{background:var(--soft);font-weight:600;white-space:nowrap}
+.flow{counter-reset:f;list-style:none;padding:0!important}
+.flow li{counter-increment:f;display:flex;gap:10px;align-items:baseline}
+.flow li::before{content:counter(f);flex:none;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-ink);text-shadow:none;
+  font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>睇書記錄</h1>
+    <p class="sub">內文頁先合上書寫重述，再交 Claude 核對；封面和目錄直接篩書。值得驗證的頁升級為模型卡，到期回填結果，迴路才算閉合。</p>
+  </header>
+
+  <nav class="tabs" aria-label="頁面">
+    <a href="#log" id="tabLog">方法與記錄</a>
+    <a href="#cards" id="tabCards">模型卡<span class="badge" id="dueBadge" hidden></span></a>
+    <a href="#method" id="tabMethod">方法全文</a>
+    <a href="#practice" id="tabPractice">入定・推理</a>
+  </nav>
+
+  <div class="view" id="viewLog">
+    <p id="notice" class="notice" hidden></p>
+    <a class="notice" id="dueBanner" href="#cards" hidden></a>
+
+    <form class="card" id="composer" novalidate>
+      <h2>上載書頁</h2>
+      <fieldset class="seg">
+        <legend>這一頁是</legend>
+        <label><input type="radio" name="mode" value="A" id="modeA" checked><span>內文頁：先重述，後核對</span></label>
+        <label><input type="radio" name="mode" value="B" id="modeB"><span>封面／目錄：篩書</span></label>
+      </fieldset>
+      <p class="msg" id="modeHint"></p>
+      <div class="field" id="noteWrap">
+        <label for="note">① 合上書，先寫重述：這頁的核心主張＋作者的理由</label>
+        <textarea id="note" maxlength="4000"></textarea>
+        <p class="msg" id="noteCount"></p>
+      </div>
+      <label class="pick" id="pickLabel"><input type="file" id="file" accept="image/jpeg,image/png,image/webp" multiple><span id="pickText"></span></label>
+      <div class="thumbs nozoom" id="preview" hidden></div>
+      <details class="opt">
+        <summary>選填：當前要解決的問題</summary>
+        <label class="f">填一次會記住，答覆會更對題<input type="text" id="goal" maxlength="300"></label>
+      </details>
+      <label class="check"><input type="checkbox" id="calm"><span id="calmLabel">這次閱讀前有入定</span></label>
+      <p class="msg" id="gateMsg" hidden></p>
+      <div class="row">
+        <button class="primary" id="askBtn" type="submit">核對我的重述</button>
+        <button class="primary" id="copyBtn" type="button" hidden>複製提問文字並儲存</button>
+        <button type="button" id="saveOnlyBtn">只儲存</button>
+      </div>
+      <p class="msg" id="say" hidden></p>
+      <div class="live" id="live" hidden>
+        <div class="row between"><h3>答覆</h3><button type="button" id="stopBtn" class="small">停止</button></div>
+        <p id="liveText" class="answer"></p>
+      </div>
+    </form>
+    <datalist id="chapList"></datalist>
+    <datalist id="bookNames"></datalist>
+
+    <section style="display:flex;flex-direction:column;gap:10px">
+      <div class="row between"><h2>記錄</h2><span class="msg" id="count"></span></div>
+      <div id="records" style="display:flex;flex-direction:column;gap:10px"></div>
+    </section>
+
+    <section class="card">
+      <h2>備份</h2>
+      <p class="msg" id="backupHint">匯出備份包含記錄、相片、模型卡和入定推理，可在另一個版本匯入。筆記只有文字，方便交給其他 AI 檢討。</p>
+      <div class="row">
+        <button type="button" id="expJson">匯出備份（JSON）</button>
+        <button type="button" id="expMd">匯出筆記（Markdown）</button>
+        <label class="btn">匯入備份<input type="file" id="impFile" accept=".json,application/json"></label>
+      </div>
+      <p class="msg" id="bkSay" hidden></p>
+    </section>
+  </div>
+
+  <div class="view" id="viewCards" hidden>
+    <section class="card">
+      <div class="row between"><h2>模型卡</h2><button type="button" id="newCardBtn" class="small">＋ 新模型卡</button></div>
+      <p class="msg">值得驗證的頁才升級為模型卡。寫下帶數字的預測和失敗條件，到期回填結果，迴路才算閉合。命中的卡進入間隔複習；證偽的卡修正後開新版本。同時驗證中最多 3 張。</p>
+      <div class="stats" id="cardStats"></div>
+      <p class="msg" id="cardSay" hidden></p>
+    </section>
+
+    <form class="card" id="cardForm" hidden novalidate>
+      <div class="row between"><h2 id="cfTitle">新模型卡</h2><button type="button" id="cfCancel" class="small">取消</button></div>
+      <div class="src" id="cfSource" hidden></div>
+      <label class="f">第一性原理依據：這個模型建基於哪些基本事實？每條註明「已知事實」或「假設」<textarea id="cfBasis" maxlength="3000"></textarea></label>
+      <label class="f">修正版模型：一兩句；標明哪些來自作者、哪些是你加的<textarea id="cfModel" maxlength="3000"></textarea></label>
+      <div class="grid2">
+        <label class="f">結論類型<select id="cfType"><option value="">請選擇</option><option>確定型</option><option>機率型</option><option>長週期型</option></select></label>
+        <label class="f">樣本數（次）<input type="number" id="cfN" min="1" max="1000" inputmode="numeric"></label>
+      </div>
+      <p class="msg" id="cfHint" hidden></p>
+      <label class="f">預測：要有數字和期限<textarea id="cfPred" maxlength="2000" placeholder="例如：兩週內 10 次構思中，至少 6 次產生可行方案"></textarea></label>
+      <label class="f">失敗條件：出現甚麼結果就算證偽<textarea id="cfFail" maxlength="2000"></textarea></label>
+      <label class="f">到期日<input type="date" id="cfDue"></label>
+      <div class="chk" id="cfCheck" hidden></div>
+      <div class="row"><button class="primary" id="cfSave" type="submit">建立模型卡</button></div>
+      <p class="msg" id="cfSay" hidden></p>
+    </form>
+
+    <div class="clist" id="cardList"></div>
+  </div>
+
+  <div class="view method" id="viewMethod" hidden>
+    <section class="card">
+      <h2>睇書作為自主路徑進步迴路</h2>
+      <p class="lead">睇書是過程，作者結論只是假說。真正目的是用它做原料，在真實處境中跑 Validation Loop，最終創造屬於自己的模型。</p>
+      <p class="key"><strong>前提：推翻之前先理解</strong>。未能準確重述作者的最強版本，就沒有資格解構它。</p>
+      <h3>五個結構層</h3>
+      <ol class="flow">
+        <li>Entry Filter（進入過濾器）</li>
+        <li>Comprehension（準確理解）</li>
+        <li>Deconstruction（解構）</li>
+        <li>Reconstruction（重構）</li>
+        <li>Validation Loop（驗證迴路）</li>
+      </ol>
+      <p>疊加三個學習機制：Elaborative Encoding、Retrieval Practice、Spaced Repetition。</p>
+    </section>
+
+    <section class="card">
+      <h2>1. Entry Filter</h2>
+      <p>選擇本身就是解難的第一步。</p>
+      <h3>共同門檻</h3>
+      <ul>
+        <li>這本書是否對應我當前真實處境的某個具體問題？不是「有名／有趣／推薦多」。</li>
+        <li>先看目錄、前言、結論章（15–20 分鐘），畫出全書結構，標出與問題相關的 3–5 個概念。</li>
+        <li>同一主題先選 1 本。</li>
+      </ul>
+      <h3>先判斷書的類型</h3>
+      <div class="tw"><table>
+        <tr><th>類型</th><th>何時選</th><th>通過標準</th></tr>
+        <tr><td>基礎書</td><td>對該領域陌生，缺基線知識</td><td>它能補上我解決問題所缺的概念；不要求有推翻衝動</td></tr>
+        <tr><td>論點書</td><td>已有基線，想測試或更新某個模型</td><td>作者結論與我現有模型衝突，或能在 7 天內取得第一個驗證訊號</td></tr>
+      </table></div>
+      <h3>論點書的興趣驗證</h3>
+      <p>問：「如果作者的核心結論是錯的，我會有興趣去查證嗎？」只是「覺得有道理」而不想查證，就放下。</p>
+      <h3>證據檢查</h3>
+      <ul>
+        <li>作者靠什麼支持結論：研究數據、個人經驗、還是成功案例？</li>
+        <li>只有成功案例而沒有失敗樣本的書，結論先降一級可信度。</li>
+      </ul>
+      <h3>中途退出條件</h3>
+      <p>讀完兩章仍產出不了任何一個可測試的點，或發現問題已不對應當前處境，就停。</p>
+    </section>
+
+    <section class="card">
+      <h2>2. 睇書流程</h2>
+      <h3>預設問題（5 分鐘）</h3>
+      <p>寫下：「我要用這書解決什麼具體問題？我預期作者會給什麼結論？」預期要寫得夠具體，之後才能對照自己錯在哪裡。</p>
+      <h3>理解：提取＋核對</h3>
+      <p>每讀完一節：合上書，用自己的話重述核心結論和作者的理由。然後開書核對，標出漏掉或講錯的地方。過關標準：能講出作者會同意的最強版本。</p>
+      <h3>解構</h3>
+      <p>只在理解過關後做。依次問：</p>
+      <ul>
+        <li>這個結論靠什麼成立：推導、數據，還是案例？</li>
+        <li>作者省略了哪些假設？適用範圍在哪裡結束？</li>
+        <li>它與我現有模型的哪一點衝突？</li>
+        <li>在我的處境中，最可能失效的條件是什麼？</li>
+      </ul>
+      <p>基礎書可以只做前兩問，其餘留待有基線後再回來。</p>
+      <h3>第一性原理的正確用法</h3>
+      <p>第一性原理不是口號，是一個有步驟的推理過程。選最重要的一個主張，寫下思考過程和具體推理：</p>
+      <ol>
+        <li>拆到不能再拆的基本事實或約束，每條註明是「已知事實」還是「假設」。</li>
+        <li>找出主張中只是類比、慣例或權威背書的部分。</li>
+        <li>只用第 1 步的基本事實重新推導，每一步寫成「因為……所以……」。</li>
+        <li>比較推導結果與作者結論，記下一致和不一致之處。</li>
+      </ol>
+      <h3>蘇格拉底式提問</h3>
+      <p>每一頁讀完，留下三條層層遞進的開放問題，不急於回答。目的是保持好奇心，讓下一次閱讀或推理有起點。</p>
+      <h3>重構</h3>
+      <p>修正版模型 = 作者結論 + 我發現的漏洞 + 我的新假設 + 可測試的應用。標明哪些部分來自作者、哪些是我加的，之後驗證失敗才知道錯在誰。</p>
+      <h3>驗證</h3>
+      <p>先分辨結論類型：</p>
+      <div class="tw"><table>
+        <tr><th>結論類型</th><th>例子</th><th>驗證方法</th></tr>
+        <tr><td>確定型</td><td>工作流程、學習技巧、溝通句式</td><td>單次最小實驗，對照預期與實際</td></tr>
+        <tr><td>機率型</td><td>投資、談判、健康、招聘</td><td>預設樣本數（至少 10–20 次）；逐次記錄決策理由，分開評決策品質與結果</td></tr>
+        <tr><td>長週期型</td><td>習慣、職涯、長期持有</td><td>找 7 天內可觀察的先行指標，另設完整檢討日期</td></tr>
+      </table></div>
+      <p>執行前寫下：預測（帶數字和日期）、失敗條件、樣本數。執行後只對照，不重新詮釋預測。修正後的版本進入下一輪。</p>
+      <h3>最低內耗技巧</h3>
+      <ul>
+        <li>時間盒：每次只產出 1 個衝突點、1 個重構模型、1 個最小實驗。</li>
+        <li>情緒過濾：若出現「覺得自己不夠好」，問「這情緒指向哪個模型邊界？值得用實驗探查嗎？」</li>
+        <li>機率型結論不因一次失敗就改模型，也不因一次成功就確認。</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>3. AI 協作規則</h2>
+      <p class="key"><strong>自己先做，AI 後驗</strong>。重述、解構、重構必須先由自己寫出，AI 只做對手和核對者。讓 AI 先給答案，提取和生成的學習效益就沒有了。</p>
+      <p>「方法與記錄」的內文頁模式要先寫滿 20 字重述，才可交 Claude 核對，就是這條規則的做法。封面和目錄用篩書模式，不用重述。模型卡的第一性原理依據和修正版模型由你寫，答覆只放在旁邊作對照。</p>
+      <div class="tw"><table>
+        <tr><th>步驟</th><th>先自己做</th><th>再交 AI 做</th></tr>
+        <tr><td>Entry Filter</td><td>寫下問題和選書理由</td><td>這本書的主要批評是什麼？同主題有沒有證據更強的書？</td></tr>
+        <tr><td>理解</td><td>合書重述，開書核對</td><td>作者會不會同意我的重述？漏了什麼？</td></tr>
+        <tr><td>解構</td><td>列出假設和衝突點</td><td>替作者反駁我這幾點；我還漏了哪些假設？</td></tr>
+        <tr><td>重構</td><td>寫出修正版模型</td><td>攻擊這個模型，指出最弱的一環</td></tr>
+        <tr><td>驗證</td><td>寫預測、失敗條件、樣本數</td><td>這個實驗有什麼混淆因素？失敗條件夠不夠明確？</td></tr>
+        <tr><td>結果檢討</td><td>記錄預期與實際</td><td>我的解讀有沒有事後合理化？</td></tr>
+      </table></div>
+      <h3>三個限制</h3>
+      <ul>
+        <li>AI 可能記錯書的內容或頁碼。凡涉及「作者說過什麼」，以原文為準，或把原文相片交給 AI。</li>
+        <li>AI 傾向同意使用者。提問要明確要求反對意見。</li>
+        <li>AI 的反駁也是假說，同樣要過 Validation Loop，不能直接寫進模型卡。</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>4. 模型卡與 Spaced Repetition</h2>
+      <h3>卡的欄位（一張卡一個模型）</h3>
+      <p>第一性原理依據 → 修正版模型（標明來自作者或自己）→ 結論類型 → 預測（帶數字和期限）→ 失敗條件 → 樣本數 → 到期日 → 結果與判定 → 版本號 → 下次複習日</p>
+      <h3>建卡門檻</h3>
+      <p>第一性原理依據、修正版模型、帶數字的預測、失敗條件缺一不可；機率型樣本最少 10 次。同時「驗證中」最多 3 張，先回填舊的才開新的。</p>
+      <h3>入卡條件</h3>
+      <p>到期回填結果並判定「命中」，才進入複習。「證偽」的模型按結果修正，開新版本；舊版保留作記錄。</p>
+      <h3>間隔</h3>
+      <p>起步用 1 天、3 天、7 天、21 天、60 天，之後每次約乘 2.5 倍。重述失敗就退回上一級間隔。這組數字是慣用起點，按自己的遺忘情況調整。</p>
+      <h3>複習時只做兩件事</h3>
+      <ol>
+        <li>合上資料，重述模型（Retrieval Practice）。</li>
+        <li>問：「上次複習至今有沒有用過？有沒有新數據需要再跑一輪？」</li>
+      </ol>
+      <h3>淘汰</h3>
+      <p>連續兩次複習都答「沒用過」，就建議歸檔。卡庫只留仍在使用的模型。</p>
+    </section>
+
+    <section class="card">
+      <h2>5. 完整流向</h2>
+      <ol class="flow">
+        <li>Entry Filter（封面／目錄：篩書模式）</li>
+        <li>預設問題與預期</li>
+        <li>理解（合書重述 → Claude 核對覆蓋與講錯）</li>
+        <li>解構（證據、第一性原理、最致命的假設）</li>
+        <li>重構（模型卡：第一性原理依據＋修正版模型）</li>
+        <li>驗證（模型卡：帶數字的預測、失敗條件、到期回填）</li>
+        <li>命中入卡；證偽則修正為新版本，再驗證</li>
+        <li>Spaced Repetition（重述＋實用檢核＋淘汰）</li>
+      </ol>
+      <p>這套系統本身也是一個假說：失敗條件寫在「入定・推理」的迴路指標，連續 4 週輸入多但沒有結果回填，就要刪減。</p>
+    </section>
+  </div>
+
+  <div class="view method" id="viewPractice" hidden>
+    <section class="card">
+      <h2>三者的關係</h2>
+      <div class="tw"><table>
+        <tr><th>環節</th><th>作用</th><th>接口</th></tr>
+        <tr><td>入定</td><td>狀態調節</td><td>閱讀前減少走神；閱讀後、重述前安靜幾分鐘</td></tr>
+        <tr><td>閱讀</td><td>外部輸入</td><td>為推理提供原料</td></tr>
+        <tr><td>思過程與具體推理</td><td>加工</td><td>解構與重構；產出可測試的預測，寫入模型卡</td></tr>
+        <tr><td>驗證</td><td>現實回饋</td><td>唯一的錯誤訊號來源；結果決定下一輪讀什麼</td></tr>
+      </table></div>
+      <p class="key"><strong>以下三項是假說，未經驗證</strong>：入定令閱讀理解更準確；入定令推理質素更高；三者構成長遠正向迴路。用這一頁的實驗和指標去測試。</p>
+    </section>
+
+    <section class="card">
+      <h2>迴路指標（近 8 週）</h2>
+      <div class="stats" id="stats"></div>
+      <p id="verdict"></p>
+      <p class="msg">迴路的失敗條件：8 週內有閱讀輸入，但沒有任何模型卡完成結果回填。系統本身的失敗條件：連續 4 週閱讀記錄 10 條或以上，但結果回填仍是 0，代表系統太重，要刪減。</p>
+    </section>
+
+    <section class="card">
+      <h2>入定實驗</h2>
+      <p class="msg">假說：入定令閱讀理解更準確。量度：內文頁重述的要點覆蓋率（Claude 核對時計算）。自己揀入定會有偏差，所以閱讀前擲硬幣決定，結果在 3 小時內自動套用到上載記錄。兩組各有 15 條核對記錄後才比較。</p>
+      <div class="row"><button type="button" id="flipBtn">閱讀前擲硬幣</button><span class="tag" id="flipOut" hidden></span></div>
+      <div class="stats" id="expStats"></div>
+      <p id="expVerdict"></p>
+    </section>
+
+    <section class="card">
+      <h2>我的做法</h2>
+      <p class="msg">用自己的話寫下兩項練習的做法。這裡不預設內容，由你定義，之後可隨時修改。</p>
+      <label class="f">入定：我怎樣做<textarea id="defCalm" maxlength="4000"></textarea></label>
+      <label class="f">思過程與具體推理：我怎樣做<textarea id="defReason" maxlength="4000"></textarea></label>
+      <div class="row"><button type="button" id="defSave" class="primary">儲存做法</button></div>
+      <p class="msg" id="defSay" hidden></p>
+    </section>
+
+    <form class="card" id="sessForm" novalidate>
+      <h2>新增一節</h2>
+      <div class="grid2">
+        <label class="f">類別<select id="sKind"><option>入定</option><option>推理</option></select></label>
+        <label class="f">分鐘<input type="number" id="sMin" min="0" max="1440" inputmode="numeric"></label>
+      </div>
+      <label class="f">內容（入定：狀態或備註；推理：問題與推理過程）<textarea id="sText" maxlength="6000"></textarea></label>
+      <label class="f">結論（可留空；要驗證的預測，請升級為模型卡）<textarea id="sConcl" maxlength="2000"></textarea></label>
+      <div class="row"><button class="primary" id="sSave" type="submit">儲存</button></div>
+      <p class="msg" id="pSay" hidden></p>
+    </form>
+
+    <section class="card">
+      <h2>最近的入定與推理</h2>
+      <div id="sessList" style="display:flex;flex-direction:column"></div>
+    </section>
+  </div>
+
+  <footer class="foot">
+    <p class="msg" id="whereAmI"></p>
+    <p class="msg">版本 @@VERSION@@ · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const NOCHAP = '未分章', NOBOOK = '未分類';
+const DAY = 864e5, IV = [1, 3, 7, 21, 60], WIP = 3, MIN_NOTE = 20, MIN_GROUP = 15, FLIP_MS = 3 * 36e5;
+const CLAUDE_URL = 'https://claude.ai/artifact/BpatGZuPqyWHMYNGSt6ksF', PAGES_URL = 'https://asdc3es513thy.github.io/Reading/';
+const DRAFT_KEY = 'reading-log:draft-note';
+const S = {entries: [], cards: [], sessions: [], flip: null, db: null, sample: null, assets: null, downloads: null, local: false,
+  maxImg: 0, files: [], prevUrls: [], busy: false, ctl: null, open: {}, le: false, lc: false, ls: false,
+  goalLoaded: false, defsLoaded: false, calmTouched: false, form: null, cfBusy: false,
+  reveal: {}, rdraft: {}, vdraft: {}, paste: {}};
+
+/* ---------- helpers ---------- */
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const btn = (text, cls) => { const b = el('button', 'small' + (cls ? ' ' + cls : ''), text); b.type = 'button'; return b; };
+const fmt = ts => ts ? new Date(ts).toLocaleString('zh-HK', {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : '';
+const fmtD = ts => ts ? new Date(ts).toLocaleDateString('zh-HK', {year: 'numeric', month: 'numeric', day: 'numeric'}) : '';
+const dateVal = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const parseDate = v => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : 0; };
+const today0 = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const plain = s => String(s || '').replace(/\s/g, '');
+const hasNum = s => /[0-9０-９一二三四五六七八九十百千半兩]/.test(s || '');
+const toHalf = s => String(s || '').replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+const clean = o => JSON.parse(JSON.stringify(o));
+const newestFirst = arr => arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+function msgTo(id, t){ const p = $(id); p.textContent = t || ''; p.hidden = !t; }
+const say = t => msgTo('say', t), notice = t => msgTo('notice', t);
+function store(k, v){ try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+function load(k){ try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function confirmBtn(b, label, fn){
+  let armed = null;
+  b.onclick = async () => {
+    if (!armed) { b.textContent = '確定' + label + '？'; armed = setTimeout(() => { armed = null; b.textContent = label; }, 4000); return; }
+    clearTimeout(armed); armed = null; b.disabled = true;
+    try { await fn(); } catch (e) { b.disabled = false; b.textContent = '未能' + label + '，再按'; setTimeout(() => { b.textContent = label; }, 4000); }
+  };
+}
+
+/* ---------- local storage: used only outside Claude (the GitHub index.html) ---------- */
+let idbP = null;
+function idb(){
+  return idbP || (idbP = new Promise((res, rej) => {
+    const r = indexedDB.open('reading-log', 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore('docs'); r.result.createObjectStore('blobs'); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  }));
+}
+function tx(name, mode, fn){
+  return idb().then(d => new Promise((res, rej) => {
+    const t = d.transaction(name, mode); const q = fn(t.objectStore(name));
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  }));
+}
+function localDb(){
+  const subs = {};
+  const range = c => IDBKeyRange.bound(c + '/', c + '/￿');
+  const emit = async c => {
+    if (!subs[c]) return;
+    const keys = await tx('docs', 'readonly', s => s.getAllKeys(range(c)));
+    const vals = await tx('docs', 'readonly', s => s.getAll(range(c)));
+    const docs = keys.map((k, i) => ({id: k.slice(c.length + 1), data: () => vals[i]}));
+    for (const f of subs[c]) f({docs});
+  };
+  const doc = path => {
+    const c = path.split('/')[0];
+    return {
+      set: async d => { await tx('docs', 'readwrite', s => s.put(clean(d), path)); await emit(c); },
+      update: async d => { const old = await tx('docs', 'readonly', s => s.get(path)); await tx('docs', 'readwrite', s => s.put({...(old || {}), ...clean(d)}, path)); await emit(c); },
+      delete: async () => { await tx('docs', 'readwrite', s => s.delete(path)); await emit(c); }
+    };
+  };
+  return {
+    doc,
+    collection: c => ({
+      add: async d => { const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); await doc(c + '/' + id).set(d); return {id}; },
+      onSnapshot: (f, err) => { (subs[c] = subs[c] || []).push(f); emit(c).catch(() => { if (err) err({code: 'unavailable'}); }); return () => {}; }
+    })
+  };
+}
+function localAssets(){
+  return {
+    upload: async b => { const id = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); await tx('blobs', 'readwrite', s => s.put(b, id)); return {id}; },
+    delete: async id => { await tx('blobs', 'readwrite', s => s.delete(id)); return {deleted: true}; }
+  };
+}
+const URLS = new Map();
+function setSrc(img, id){
+  if (!S.local) { img.src = '/_blob/' + id; return; }
+  if (!URLS.has(id)) URLS.set(id, tx('blobs', 'readonly', s => s.get(id)).then(b => b ? URL.createObjectURL(b) : ''));
+  URLS.get(id).then(u => { if (u) img.src = u; else img.hidden = true; }, () => { img.hidden = true; });
+}
+function dropImage(id){
+  const p = URLS.get(id);
+  if (p) { URLS.delete(id); p.then(u => { if (u) URL.revokeObjectURL(u); }, () => {}); }
+  if (S.assets) S.assets.delete(id).catch(() => {});
+}
+async function getBlob(id){
+  if (S.local) return tx('blobs', 'readonly', s => s.get(id));
+  const r = await fetch('/_blob/' + id); return r.ok ? r.blob() : null;
+}
+
+/* ---------- answers: header lines, titles, sections ---------- */
+function cleanTitle(s){
+  s = String(s || '').replace(/[《》〈〉「」『』*]/g, '').trim();
+  s = s.replace(/\s*[（(][^）)]*[）)]?\s*$/, '').trim();
+  return s.slice(0, 60);
+}
+const bookOf = e => cleanTitle(e.bookTitle) || NOBOOK;
+const typeFor = t => { const k = cleanTitle(t); if (!k) return ''; const p = S.entries.find(x => bookOf(x) === k && x.bookType); return p ? p.bookType : ''; };
+function pull(t, label){
+  const m = new RegExp('^[ \\t>*#•\\-]*' + label + '[ \\t*]*[:：][ \\t*]*(.*?)[ \\t*]*$', 'm').exec(t || '');
+  if (!m) return {v: '', text: t || ''};
+  let v = m[1].trim();
+  if (/未能判斷|無法判斷|^(不明|未提供|沒有|無)$/.test(v)) v = '';
+  return {v, text: t.slice(0, m.index) + t.slice(m.index + m[0].length)};
+}
+const SECTIONS = ['核對', '核心主張', '理解', '背景與批評', '證據檢查', '第一性原理', '解構', '下一步'];
+function parseAnswer(raw){
+  const t = String(raw || '');
+  let i = -1;
+  for (const s of SECTIONS) { const k = t.indexOf('【' + s + '】'); if (k >= 0 && (i < 0 || k < i)) i = k; }
+  let head = i >= 0 ? t.slice(0, i) : t;
+  const body = i >= 0 ? t.slice(i).trim() : '', o = {};
+  for (const [k, label] of [['title', '書名'], ['chapter', '章節'], ['type', '類型'], ['cover', '覆蓋'], ['wrong', '講錯']]) { const r = pull(head, label); o[k] = r.v; head = r.text; }
+  o.text = [head.replace(/\n{3,}/g, '\n\n').trim(), body].filter(Boolean).join('\n\n');
+  o.title = cleanTitle(o.title);
+  o.chapter = o.chapter.replace(/[《》「」*]/g, '').trim().slice(0, 60);
+  o.type = /基礎/.test(o.type) ? '基礎書' : /論點/.test(o.type) ? '論點書' : '';
+  const c = /(\d+)\s*[\/／]\s*(\d+)/.exec(toHalf(o.cover));
+  o.cover = c && +c[2] > 0 && +c[1] <= +c[2] ? {hit: +c[1], total: +c[2]} : null;
+  const w = /\d+/.exec(toHalf(o.wrong));
+  o.wrong = w ? +w[0] : null;
+  return o;
+}
+function section(text, name){
+  const t = String(text || ''), tag = '【' + name + '】', i = t.indexOf(tag);
+  if (i < 0) return '';
+  const j = t.indexOf('【', i + tag.length);
+  return t.slice(i + tag.length, j < 0 ? undefined : j).trim();
+}
+
+/* ---------- prompt: five sections, built on the method ---------- */
+function buildPrompt(mode, c, note, nImg){
+  const head = [
+    '你是閱讀協作者，角色是核對者和對手，不是講解員。不要迎合用戶。',
+    '',
+    '用戶的閱讀方法（請嚴格按這些原理作答）：',
+    '1. 作者結論只是假說；目的是用它做原料，在真實處境中驗證，建立自己的模型。',
+    '2. 推翻之前先理解：先準確掌握作者會同意的最強版本，才解構。',
+    '3. 證據分級：分清結論靠推導、數據、案例還是個人經驗；只有成功案例、沒有失敗樣本，可信度降一級。',
+    '4. 第一性原理：把主張拆到不能再拆的基本事實或約束，分清事實與假設，只用基本事實一步一步重新推導，不靠類比、慣例或權威。',
+    '5. 時間盒：每頁只深入最重要的一點，寧可少而深，不要多而淺。',
+    '6. 資料來源：圖中原文優先；圖中沒有的內容標明「模型記憶，未查證」；不確定就說不確定，不編造頁碼、數據或引文；你不能上網，不要假裝查過；你自己的推論標明「推論」。',
+    '',
+    '用戶當前要解決的問題：' + (c.question || '未提供'),
+    '上一張圖的書名：' + (c.title || '沒有') + '；章節：' + (c.chapter || '沒有'),
+    nImg ? '附圖共 ' + nImg + ' 張。' : '這次沒有附圖。',
+    '',
+    '格式：繁體中文純文字，不用 Markdown 符號（不用 #、*、-）。不要開場白、總結或免責段落；同一個意思不要在不同小節重複；「模型記憶，未查證」每節最多標一次。'
+  ];
+  const titleRule = '書名：只寫書名本身，不加原文書名、作者或括號；判斷不到但與上一張圖屬同一本書就沿用上一張的書名；否則寫「未能判斷」。';
+  const middle = [
+    '【背景與批評】這些主張靠什麼證據成立、證據有多強、有沒有倖存者偏差；領域內已知的主要批評或相反證據；同主題有沒有證據更強的書或研究。',
+    '【第一性原理】選最重要的一個主張，分四步寫出完整的思考過程和具體推理：（一）拆到不能再拆的基本事實或約束，每條註明「已知事實」或「假設」；（二）指出哪些部分只是類比、慣例或權威背書；（三）只用基本事實重新推導，每一步寫成「因為……所以……」；（四）比較推導結果與作者結論，指出一致和不一致之處。',
+    '【解構】只寫最致命的一至兩個隱含假設，逐個說明如果不成立會怎樣；再寫適用範圍在哪裡結束。'
+  ];
+  if (mode === 'B') return head.concat([
+    '這是封面、目錄或前言，用途是篩書。用戶未讀內文，沒有重述。',
+    '開頭三行固定格式，每行一項：',
+    titleRule,
+    '章節：寫「封面」「目錄」或「前言」。',
+    '類型：基礎書 或 論點書（基礎書＝補基線知識；論點書＝提出可被測試或反駁的主張）。',
+    '然後依次寫以下五節，標題獨立成行：',
+    '【核心主張】全書的核心主張，最多五個，有幾個寫幾個，不湊數；每個一句，附作者的理由；最後用一句說明整體論證結構。'
+  ], middle, [
+    '【下一步】行動：按用戶的問題判斷這本書值不值得讀（值得、不值得，或要先確認甚麼），附一句理由。蘇格拉底式提問：三條讀這本書時應帶住的開放問題，層層遞進，不給答案、不暗示答案，目的是引發好奇心。'
+  ]).join('\n');
+  return head.concat([
+    '這是內文頁。用戶已合上書，先自己寫了重述：',
+    '「' + note + '」',
+    '開頭五行固定格式，每行一項：',
+    titleRule,
+    '章節：從頁眉或標題判斷；判斷不到但與上一張圖屬同一章就沿用；否則寫「未能判斷」。',
+    '類型：基礎書 或 論點書（基礎書＝補基線知識；論點書＝提出可被測試或反駁的主張）。',
+    '覆蓋：用戶重述覆蓋了該頁幾個要點／該頁共有幾個要點，例如「覆蓋：2/4」。',
+    '講錯：用戶重述中講錯的地方數目，例如「講錯：1」。',
+    '然後依次寫以下五節，標題獨立成行：',
+    '【核對】先列出該頁的要點，最多五個，有幾個寫幾個，不湊數；每點一句，附作者的理由，寫成作者會同意的最強版本。逐點標明用戶重述「已覆蓋」「遺漏」或「講錯」，講錯的要指出錯在哪裡。不要抄錄排版、作者頭銜等與論點無關的資訊。'
+  ], middle, [
+    '【下一步】行動：一句話，並判斷這頁值不值得升級為模型卡（值得或不值得，附一句理由）。蘇格拉底式提問：三條由這一頁出發、層層遞進的開放問題，不給答案、不暗示答案，目的是引發好奇心。'
+  ]).join('\n');
+}
+function ctx(){
+  const last = S.entries[0], t = last ? bookOf(last) : '';
+  return {title: t === NOBOOK ? '' : t, chapter: last ? (last.chapter || '') : '', question: $('goal').value.trim()};
+}
+
+/* ---------- composer ---------- */
+const curMode = () => document.querySelector('input[name="mode"]:checked').value === 'B' ? 'B' : 'A';
+function flipNow(){ const f = S.flip; return f && f.at && Date.now() - f.at < FLIP_MS ? f : null; }
+function gate(){
+  const mode = curMode(), n = plain($('note').value).length;
+  if (!S.files.length) return {ok: false, msg: mode === 'A' ? '寫好重述後，打開書影低這一頁，才可交 Claude 核對。' : '先上載封面、目錄或前言的相片。'};
+  if (mode === 'A' && n < MIN_NOTE) return {ok: false, msg: '重述還差 ' + (MIN_NOTE - n) + ' 字：先合上書自己寫，才可交 Claude 核對。'};
+  return {ok: true, msg: ''};
+}
+function renderComposer(){
+  const mode = curMode(), n = plain($('note').value).length, g = gate(), fl = flipNow();
+  $('noteWrap').hidden = mode === 'B';
+  $('modeHint').textContent = mode === 'A'
+    ? '先合上書寫重述，再影這一頁。Claude 只做核對：你覆蓋了、遺漏了、講錯了哪些要點。'
+    : '未讀內文時用：不用重述，直接取得核心主張、批評，和這本書值不值得讀。';
+  $('noteCount').textContent = '已寫 ' + n + ' 字（最少 ' + MIN_NOTE + ' 字）';
+  $('pickText').textContent = S.files.length ? '已選 ' + S.files.length + ' 張，按此重選' : (mode === 'A' ? '② 打開書，影這一頁' : '＋ 影封面、目錄或前言');
+  $('askBtn').textContent = mode === 'A' ? '核對我的重述' : '篩書：核心主張與批評';
+  $('askBtn').disabled = $('copyBtn').disabled = S.busy || !g.ok;
+  $('saveOnlyBtn').disabled = S.busy || (!S.files.length && !(mode === 'A' && n));
+  msgTo('gateMsg', g.msg);
+  $('calmLabel').textContent = '這次閱讀前有入定' + (fl ? '（擲硬幣：' + (fl.result === 'calm' ? '入定' : '不入定') + '）' : '');
+}
+function renderPreview(){
+  for (const u of S.prevUrls) URL.revokeObjectURL(u);
+  S.prevUrls = [];
+  const box = $('preview'); box.textContent = '';
+  for (const f of S.files) {
+    const img = el('img'); img.alt = '待上載的相片';
+    try { const u = URL.createObjectURL(f); S.prevUrls.push(u); img.src = u; } catch (e) {}
+    box.append(img);
+  }
+  box.hidden = !S.files.length;
+}
+$('file').onchange = () => {
+  const cap = Math.max(1, Math.min(S.maxImg || 4, 4)), all = [...$('file').files];
+  S.files = all.slice(0, cap);
+  say(all.length > cap ? '一次最多 ' + cap + ' 張，已取前 ' + cap + ' 張。' : '');
+  renderPreview(); renderComposer();
+};
+for (const r of document.querySelectorAll('input[name="mode"]')) r.onchange = renderComposer;
+$('note').oninput = () => { store(DRAFT_KEY, $('note').value); renderComposer(); };
+$('calm').onchange = () => { S.calmTouched = true; };
+$('goal').onchange = () => { S.goalLoaded = true; if (S.db) S.db.doc('practice/goal').set({text: $('goal').value.trim(), updatedAt: Date.now()}).catch(() => {}); };
+$('goal').onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('goal').blur(); } };
+async function shrink(file){
+  try {
+    const bmp = await createImageBitmap(file, {imageOrientation: 'from-image'});
+    const s = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+    return b || file;
+  } catch (e) { return file; }
+}
+function errCopy(code){
+  switch (code) {
+    case 'not_granted': case 'sampling_disabled': case 'not_declared': case 'capability_disabled': case 'capability_removed':
+      $('askBtn').hidden = true; $('copyBtn').hidden = false;
+      return '這個頁面未獲准使用 Claude。可改按「複製提問文字並儲存」，到 Claude 對話取得答覆。';
+    case 'rate_limited': return '用量已到上限或請求太頻密，請稍後再試；可以先按「只儲存」。';
+    case 'image_rejected': case 'images_unavailable': return '相片無法讀取，請換一張 JPEG 或 PNG。';
+    case 'session_expired': return '登入已過期，請重新登入後再試。';
+    case 'refused': return 'Claude 拒絕處理這個內容，請換一張相片或修改文字。';
+    case 'prompt_too_large': return '文字太長，請縮短你的重述。';
+    default: return '連線中斷，未能完成答覆，請再試一次。';
+  }
+}
+function setBusy(v){ S.busy = v; $('stopBtn').hidden = !v; renderComposer(); }
+function draftRecord(mode, note){
+  const fl = flipNow(), calm = $('calm').checked;
+  return {mode, note, answer: '', truncated: false, prompt: '', bookTitle: '', chapter: '', bookType: '', cover: null, wrong: null,
+    calm, assigned: !!fl && calm === (fl.result === 'calm')};
+}
+async function saveEntry(rec, blobs){
+  const assetIds = []; let imgFail = false;
+  for (const b of blobs) {
+    if (!S.assets) { imgFail = true; break; }
+    try { const r = await S.assets.upload(b, {type: b.type || 'image/jpeg'}); assetIds.push(r.id); } catch (e) { imgFail = true; }
+  }
+  await S.db.collection('entries').add(clean({...rec, assetIds, createdAt: Date.now()}));
+  return imgFail;
+}
+function afterSave(rec, text){
+  S.files = []; $('file').value = '';
+  if (rec.mode === 'A') { $('note').value = ''; store(DRAFT_KEY, ''); }
+  renderPreview();
+  const fl = flipNow(); S.calmTouched = false; $('calm').checked = !!fl && fl.result === 'calm';
+  $('live').hidden = true; $('liveText').textContent = '';
+  S.open[(cleanTitle(rec.bookTitle) || NOBOOK) + '|' + (rec.chapter || NOCHAP)] = true;
+  say(text); setBusy(false); renderRecords();
+}
+async function submit(withAnswer){
+  if (S.busy || !S.db) return;
+  const mode = curMode(), note = mode === 'A' ? $('note').value.trim() : '';
+  if (withAnswer) { if (!S.sample) return; const g = gate(); if (!g.ok) { say(g.msg); return; } }
+  else if (!S.files.length && !note) { say('請先上載相片或寫下重述。'); return; }
+  setBusy(true); say('');
+  const blobs = await Promise.all(S.files.map(shrink));
+  const rec = draftRecord(mode, note);
+  if (withAnswer) {
+    $('live').hidden = false; $('liveText').textContent = '思考中…通常需要十多秒至一分鐘。';
+    S.ctl = new AbortController();
+    try {
+      const imgs = S.maxImg > 0 ? blobs : [];
+      const opts = {signal: S.ctl.signal, onText: ({text}) => { $('liveText').textContent = text; }};
+      if (imgs.length) opts.images = imgs;
+      const r = await S.sample(buildPrompt(mode, ctx(), note, imgs.length), opts);
+      const p = parseAnswer(r.text);
+      Object.assign(rec, {answer: p.text, truncated: !!r.truncated, bookTitle: p.title, chapter: p.chapter, bookType: p.type || typeFor(p.title), cover: p.cover, wrong: p.wrong});
+    } catch (e) {
+      const kept = e && e.text ? e.text : '';
+      $('liveText').textContent = kept; $('live').hidden = !kept;
+      say(e && e.code === 'cancelled' ? '已停止，未儲存。' : errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || ('script：' + String((e && e.message) || e).slice(0, 120))) + '）');
+      setBusy(false); return;
+    }
+  }
+  let imgFail;
+  try { imgFail = await saveEntry(rec, blobs); }
+  catch (e) { say(e && e.code === 'quota_exceeded' ? '記錄庫已滿，請先刪除舊記錄。' : '未能儲存記錄，請再試。' + (rec.answer ? '答覆仍在上面，可以先複製。' : '')); setBusy(false); return; }
+  const where = '「' + (cleanTitle(rec.bookTitle) || NOBOOK) + ' › ' + (rec.chapter || NOCHAP) + '」';
+  afterSave(rec, (imgFail ? '已儲存文字，但相片未能保存。' : '已儲存到' + where + '。') + (rec.cover ? '覆蓋 ' + rec.cover.hit + '/' + rec.cover.total + (rec.wrong ? '，講錯 ' + rec.wrong : '') + '。' : ''));
+}
+$('composer').addEventListener('submit', ev => { ev.preventDefault(); submit(true); });
+$('saveOnlyBtn').onclick = () => submit(false);
+$('stopBtn').onclick = () => { if (S.ctl) S.ctl.abort(); };
+$('copyBtn').onclick = async () => {
+  if (S.busy || !S.db) return;
+  const g = gate(); if (!g.ok) { say(g.msg); return; }
+  const mode = curMode(), note = $('note').value.trim();
+  const prompt = buildPrompt(mode, ctx(), note, S.files.length);
+  let copied = false;
+  try { await navigator.clipboard.writeText(prompt); copied = true; } catch (e) {}
+  setBusy(true);
+  const blobs = await Promise.all(S.files.map(shrink));
+  const rec = Object.assign(draftRecord(mode, mode === 'A' ? note : ''), {prompt});
+  let imgFail;
+  try { imgFail = await saveEntry(rec, blobs); } catch (e) { say('未能儲存，請再試。'); setBusy(false); return; }
+  afterSave(rec, (imgFail ? '相片未能保存。' : '') + (copied
+    ? '已複製提問文字並儲存。到 Claude 貼上，連同同一張相片發送；收到答覆後，在下面這條記錄按「貼上答覆」。'
+    : '已儲存，但未能自動複製：在下面這條記錄按「複製提問文字」。'));
+};
+
+/* ---------- records: book → chapter → entry ---------- */
+async function copyText(text, b, host){
+  try { await navigator.clipboard.writeText(text); b.textContent = '已複製'; setTimeout(() => { b.textContent = '複製提問文字'; }, 2000); }
+  catch (e) {
+    if (host.querySelector('textarea.copyfb')) return;
+    const ta = el('textarea', 'copyfb'); ta.readOnly = true; ta.value = text; ta.setAttribute('aria-label', '提問文字（請手動複製）');
+    host.append(el('p', 'lbl', '未能自動複製：請長按下面的文字全選複製。'), ta); ta.focus(); ta.select();
+  }
+}
+function pasteForm(e, host){
+  const ta = el('textarea'); ta.maxLength = 30000; ta.placeholder = '貼上 Claude 的答覆'; ta.setAttribute('aria-label', 'Claude 的答覆');
+  ta.value = S.paste[e.id] || ''; ta.oninput = () => { S.paste[e.id] = ta.value; };
+  const ok = btn('儲存答覆', 'primary'), cancel = btn('取消');
+  cancel.onclick = () => { delete S.paste[e.id]; renderRecords(); };
+  ok.onclick = async () => {
+    const v = ta.value.trim(); if (!v) return; ok.disabled = true;
+    const p = parseAnswer(v), title = e.bookTitle || p.title;
+    const u = {answer: p.text, truncated: false, prompt: '', bookTitle: title, chapter: e.chapter || p.chapter, bookType: e.bookType || p.type || typeFor(title)};
+    if (p.cover) u.cover = p.cover;
+    if (p.wrong != null) u.wrong = p.wrong;
+    try { delete S.paste[e.id]; S.open[(cleanTitle(title) || NOBOOK) + '|' + (u.chapter || NOCHAP)] = true; await S.db.doc('entries/' + e.id).update(u); }
+    catch (x) { S.paste[e.id] = v; notice('未能儲存答覆，請再試。'); ok.disabled = false; }
+  };
+  const row = el('div', 'row'); row.append(ok, cancel);
+  host.append(ta, row);
+}
+function entryNode(e){
+  const a = el('article', 'entry'), head = el('div', 'row');
+  if (e.mode) head.append(el('span', 'tag', e.mode === 'B' ? '篩書' : '核對'));
+  if (e.cover) head.append(el('span', 'tag', '覆蓋 ' + e.cover.hit + '/' + e.cover.total));
+  if (e.mode === 'A' && e.wrong != null) head.append(el('span', 'tag' + (e.wrong ? ' warn' : ''), '講錯 ' + e.wrong));
+  if (e.calm) head.append(el('span', 'tag dim', e.assigned ? '入定（擲硬幣）' : '入定後'));
+  const mv = btn('改分類'), del = btn('刪除', 'danger'), acts = el('div', 'acts');
+  acts.append(mv, del); head.append(el('span', 'time', fmt(e.createdAt)), acts); a.append(head);
+  mv.onclick = () => {
+    const box = el('div', 'vform');
+    const mk = (label, val, list) => { const i = el('input'); i.type = 'text'; i.maxLength = 60; i.value = val; i.setAttribute('list', list); i.setAttribute('aria-label', label); i.placeholder = label; return i; };
+    const bi = mk('書名', bookOf(e) === NOBOOK ? '' : bookOf(e), 'bookNames'), ci = mk('章節', e.chapter || '', 'chapList');
+    const ti = el('select'); ti.setAttribute('aria-label', '書籍類型');
+    for (const o of ['', '基礎書', '論點書']) ti.append(new Option(o || '類型未定', o));
+    ti.value = typeFor(e.bookTitle) || e.bookType || '';
+    const ok = btn('儲存', 'primary'); ok.style.alignSelf = 'flex-start';
+    ok.onclick = async () => {
+      ok.disabled = true;
+      const nb = cleanTitle(bi.value), ty = ti.value;
+      try {
+        await S.db.doc('entries/' + e.id).update({bookTitle: nb, chapter: ci.value.trim(), bookType: ty});
+        for (const x of S.entries.filter(x => x.id !== e.id && bookOf(x) === (nb || NOBOOK) && (x.bookType || '') !== ty)) await S.db.doc('entries/' + x.id).update({bookType: ty});
+      } catch (x) { notice('未能更改分類，請再試。'); ok.disabled = false; }
+    };
+    box.append(bi, ci, ti, ok); head.after(box); mv.disabled = true; bi.focus();
+  };
+  confirmBtn(del, '刪除', async () => { await S.db.doc('entries/' + e.id).delete(); for (const id of (e.assetIds || [])) dropImage(id); });
+  if (e.assetIds && e.assetIds.length) {
+    const t = el('div', 'thumbs');
+    for (const id of e.assetIds) {
+      const img = el('img'); img.alt = '上載的書頁'; img.loading = 'lazy';
+      img.onclick = () => img.classList.toggle('big'); img.onerror = () => { img.hidden = true; };
+      setSrc(img, id); t.append(img);
+    }
+    a.append(t);
+  }
+  if (e.note) a.append(el('p', 'lbl', '我的重述'), el('p', 'mine', e.note));
+  if (e.answer) {
+    a.append(el('p', 'lbl', '答覆'), el('p', 'answer', e.answer));
+    if (e.truncated) a.append(el('p', 'msg', '（答覆因長度被截短）'));
+  }
+  const foot = el('div', 'row'), cards = S.cards.filter(c => c.sourceType === 'entry' && c.sourceId === e.id);
+  if (!e.answer) {
+    if (e.prompt) { const cp = btn('複製提問文字'); cp.onclick = () => copyText(e.prompt, cp, a); foot.append(cp); }
+    if (!(e.id in S.paste)) { const pb = btn('貼上答覆', 'primary'); pb.onclick = () => { S.paste[e.id] = ''; renderRecords(); }; foot.append(pb); }
+  }
+  if (cards.length) { const l = el('a', 'link', '已有模型卡 ' + cards.length + ' 張'); l.href = '#cards'; foot.append(l); }
+  else if (e.answer || e.note) { const up = btn('升級為模型卡'); up.onclick = () => openCardForm({type: 'entry', id: e.id}); foot.append(up); }
+  if (foot.childNodes.length) a.append(foot);
+  if (e.id in S.paste && !e.answer) pasteForm(e, a);
+  return a;
+}
+function renderRecords(){
+  const box = $('records'); box.textContent = '';
+  const all = S.entries;
+  $('count').textContent = all.length ? '共 ' + all.length + ' 條' : '';
+  const fill = (id, vals) => { const dl = $(id); dl.textContent = ''; for (const v of [...new Set(vals.filter(Boolean))]) dl.append(new Option(v, v)); };
+  fill('chapList', all.map(e => e.chapter)); fill('bookNames', all.map(bookOf).filter(v => v !== NOBOOK));
+  if (!S.le) { box.append(el('p', 'msg', '載入中…')); return; }
+  if (!all.length) { box.append(el('p', 'msg', '未有記錄。內文頁先寫重述再影相；封面或目錄揀「篩書」直接影相。')); return; }
+  const books = new Map();
+  for (const e of all) {
+    const k = bookOf(e); if (!books.has(k)) books.set(k, new Map());
+    const ch = books.get(k), c = e.chapter || NOCHAP; if (!ch.has(c)) ch.set(c, []); ch.get(c).push(e);
+  }
+  const newest = bookOf(all[0]) + '|' + (all[0].chapter || NOCHAP);
+  for (const [bk, chs] of books) {
+    const h = el('div', 'bk'), left = el('div', 'row'); let n = 0;
+    for (const v of chs.values()) n += v.length;
+    left.style.minWidth = '0'; left.append(el('h3', null, bk));
+    const ty = typeFor(bk); if (ty) left.append(el('span', 'tag', ty));
+    h.append(left, el('span', 'msg', n + ' 條')); box.append(h);
+    const keys = [...chs.keys()].sort((x, y) => x === NOCHAP ? 1 : y === NOCHAP ? -1 : x.localeCompare(y, 'zh-Hant', {numeric: true}));
+    for (const k of keys) {
+      const d = el('details', 'chap'), key = bk + '|' + k;
+      d.open = key in S.open ? S.open[key] : key === newest;
+      d.addEventListener('toggle', () => { S.open[key] = d.open; });
+      const sm = el('summary'); sm.append(el('span', null, k), el('span', 'n', chs.get(k).length + ' 條'));
+      const list = el('div', 'entries'); for (const e of chs.get(k)) list.append(entryNode(e));
+      d.append(sm, list); box.append(d);
+    }
+  }
+}
+
+/* ---------- model cards: validation queue + spaced repetition ---------- */
+const ivDays = st => st < IV.length ? IV[st] : Math.round(IV[IV.length - 1] * Math.pow(2.5, st - IV.length + 1));
+const isDue = (c, now) => (c.status === '驗證中' && c.dueAt > 0 && c.dueAt <= now) || (c.status === '已入卡' && c.nextReviewAt > 0 && c.nextReviewAt <= now);
+const isArchived = c => c.status === '已歸檔' || !!c.supersededBy;
+const dueCount = () => { const now = Date.now(); return S.cards.filter(c => !isArchived(c) && isDue(c, now)).length; };
+function renderDue(){
+  const n = dueCount();
+  $('dueBadge').textContent = n; $('dueBadge').hidden = !n;
+  $('dueBanner').textContent = '有 ' + n + ' 張模型卡到期，按此處理'; $('dueBanner').hidden = !n;
+}
+function sourceInfo(src){
+  if (!src || !src.type) return null;
+  if (src.type === 'entry') {
+    const e = S.entries.find(x => x.id === src.id);
+    if (!e) return {label: '來源記錄已刪除', bookTitle: '', chapter: ''};
+    const b = bookOf(e);
+    return {label: b + ' › ' + (e.chapter || NOCHAP) + ' · ' + fmt(e.createdAt), ref: section(e.answer, '第一性原理'), refLabel: '參考：答覆中的第一性原理（先自己寫，再對照）',
+      bookTitle: b === NOBOOK ? '' : b, chapter: e.chapter || ''};
+  }
+  const s = S.sessions.find(x => x.id === src.id);
+  if (!s) return {label: '來源推理已刪除', bookTitle: '', chapter: ''};
+  return {label: '推理 · ' + fmt(s.createdAt), ref: [s.text, s.conclusion].filter(Boolean).join('\n\n'), refLabel: '參考：推理內容', bookTitle: '', chapter: ''};
+}
+function openCardForm(src, from){
+  S.form = {src: src || (from && from.sourceType ? {type: from.sourceType, id: from.sourceId} : null), from: from || null};
+  const f = from || {};
+  $('cfBasis').value = f.basis || ''; $('cfModel').value = f.model || ''; $('cfType').value = f.ctype || '';
+  $('cfPred').value = ''; $('cfFail').value = ''; $('cfN').value = f.target || '';
+  $('cfDue').value = dateVal(Date.now() + 7 * DAY);
+  $('cfTitle').textContent = from ? '修正為 v' + ((from.version || 1) + 1) : '新模型卡';
+  const box = $('cfSource'), info = sourceInfo(S.form.src); box.textContent = '';
+  if (from) {
+    box.append(el('p', 'msg', '上一版 v' + (from.version || 1) + '：預測「' + (from.pred || '') + '」；結果「' + (from.result || '未回填') + '」。按結果修正模型，再寫新的預測。'));
+  }
+  if (info) {
+    box.append(el('p', 'msg', '來源：' + info.label));
+    if (info.ref) { const d = el('details'), sm = el('summary', null, info.refLabel); d.append(sm, el('p', 'answer', info.ref)); box.append(d); }
+  }
+  box.hidden = !box.childNodes.length;
+  msgTo('cfSay', ''); $('cardForm').hidden = false;
+  if (location.hash !== '#cards') location.hash = '#cards'; else route();
+  renderCardCheck();
+  setTimeout(() => { $('cardForm').scrollIntoView({block: 'start'}); $('cfBasis').focus(); }, 60);
+}
+function closeCardForm(){ S.form = null; $('cardForm').hidden = true; for (const id of ['cfBasis', 'cfModel', 'cfType', 'cfPred', 'cfFail', 'cfN']) $(id).value = ''; }
+function cardIssues(){
+  const L = [], ty = $('cfType').value, pred = $('cfPred').value.trim(), n = Math.round(Number($('cfN').value) || 0), due = parseDate($('cfDue').value);
+  if (!$('cfBasis').value.trim()) L.push('寫下這個模型建基於哪些基本事實（第一性原理）。');
+  if (!$('cfModel').value.trim()) L.push('寫下修正版模型。');
+  if (!ty) L.push('揀結論類型。');
+  if (!pred) L.push('寫下預測。'); else if (!hasNum(pred)) L.push('預測要有數字和期限，事後才可對照。');
+  if (!$('cfFail').value.trim()) L.push('寫下失敗條件。');
+  if (n < 1) L.push('寫下樣本數。'); else if (ty === '機率型' && n < 10) L.push('機率型樣本最少 10 次，不可憑單次結果確認或推翻。');
+  if (!due) L.push('揀到期日。'); else if (due < today0()) L.push('到期日不可早過今日。');
+  const active = S.cards.filter(c => c.status === '驗證中' && !c.supersededBy).length;
+  if (active >= WIP) L.push('驗證中已有 ' + active + ' 張（上限 ' + WIP + ' 張）：先回填其中一張的結果。');
+  return L;
+}
+function renderCardCheck(){
+  if ($('cardForm').hidden) return;
+  const L = cardIssues(), box = $('cfCheck'), ty = $('cfType').value; box.textContent = '';
+  if (L.length) { box.append(el('p', null, '未可建立，還差：')); const ul = el('ul'); for (const t of L) ul.append(el('li', null, t)); box.append(ul); }
+  box.hidden = !L.length; $('cfSave').disabled = !!L.length || S.cfBusy;
+  msgTo('cfHint', ty === '長週期型' ? '長週期型：預測寫 7 天內可觀察的先行指標；完整檢討日期寫在失敗條件內。'
+    : ty === '機率型' ? '機率型：預設至少 10 次樣本；逐次記錄決策理由，分開評決策品質與結果。'
+    : ty === '確定型' ? '確定型：單次最小實驗，對照預期與實際。' : '');
+}
+for (const id of ['cfBasis', 'cfModel', 'cfPred', 'cfFail', 'cfN', 'cfDue']) $(id).addEventListener('input', renderCardCheck);
+$('cfType').onchange = () => { if (!$('cfN').value) $('cfN').value = $('cfType').value === '機率型' ? 10 : $('cfType').value ? 1 : ''; renderCardCheck(); };
+$('cfCancel').onclick = closeCardForm;
+$('newCardBtn').onclick = () => openCardForm(null, null);
+$('cardForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  if (!S.db || !S.form || cardIssues().length) { renderCardCheck(); return; }
+  const src = S.form.src, from = S.form.from, info = sourceInfo(src) || {}, now = Date.now();
+  const data = {sourceType: src ? src.type : '', sourceId: src ? src.id : '',
+    bookTitle: info.bookTitle || (from && from.bookTitle) || '', chapter: info.chapter || (from && from.chapter) || '',
+    basis: $('cfBasis').value.trim(), model: $('cfModel').value.trim(), ctype: $('cfType').value, pred: $('cfPred').value.trim(), fail: $('cfFail').value.trim(),
+    target: Math.round(Number($('cfN').value)), completed: 0, dueAt: parseDate($('cfDue').value), status: '驗證中', result: '', verdict: '', verdictAt: 0,
+    srStage: 0, nextReviewAt: 0, unused: 0, reviews: 0, version: from ? (from.version || 1) + 1 : 1, parentId: from ? from.id : '', supersededBy: '', createdAt: now, updatedAt: now};
+  S.cfBusy = true; renderCardCheck();
+  try {
+    const ref = await S.db.collection('cards').add(data);
+    if (from) await S.db.doc('cards/' + from.id).update({supersededBy: ref.id, updatedAt: now});
+    closeCardForm(); msgTo('cardSay', '已建立 v' + data.version + '，到期日 ' + fmtD(data.dueAt) + '。');
+  } catch (e) { msgTo('cfSay', e && e.code === 'quota_exceeded' ? '記錄庫已滿，請先刪除舊記錄。' : '未能建立，請再試。'); }
+  S.cfBusy = false; renderCardCheck();
+});
+async function upd(c, data, ok){
+  try { await S.db.doc('cards/' + c.id).update({...data, updatedAt: Date.now()}); if (ok) msgTo('cardSay', ok); }
+  catch (e) { msgTo('cardSay', '未能儲存，請再試。'); }
+}
+function kv(pairs){
+  const dl = el('dl', 'kv');
+  for (const [k, v] of pairs) if (k && v !== '' && v != null) dl.append(el('dt', null, k), el('dd', null, String(v)));
+  return dl;
+}
+function radios(name, legend, opts, onchange){
+  const fs = el('fieldset', 'seg'); fs.append(el('legend', null, legend));
+  for (const [v, t] of opts) {
+    const l = el('label'), i = el('input'); i.type = 'radio'; i.name = name; i.value = v; i.onchange = onchange;
+    l.append(i, el('span', null, t)); fs.append(l);
+  }
+  return {el: fs, value: () => { const c = fs.querySelector('input:checked'); return c ? c.value : ''; }};
+}
+function verdictForm(c, host, due){
+  const d = S.vdraft[c.id] || (S.vdraft[c.id] = {result: c.result || '', completed: c.completed || 0});
+  const box = el('div', 'vform');
+  box.append(el('p', 'msg', due ? '已到期：只對照事前的預測和失敗條件，不重新詮釋。' : '到期前可先記錄進度。'));
+  const rl = el('label', 'f', '實際結果'), ta = el('textarea'); ta.maxLength = 3000; ta.value = d.result; rl.append(ta);
+  const nl = el('label', 'f', '已完成樣本（目標 ' + (c.target || 1) + ' 次）'), ni = el('input'); ni.type = 'number'; ni.min = '0'; ni.inputMode = 'numeric'; ni.value = d.completed; nl.append(ni);
+  const why = el('p', 'msg'), hit = btn('命中', 'primary'), miss = btn('證偽'), save = btn('儲存進度'), later = btn('延後 7 天');
+  const sync = () => {
+    d.result = ta.value; d.completed = Math.max(0, Math.round(Number(ni.value) || 0));
+    const r = [];
+    if (d.completed < (c.target || 1)) r.push('樣本未夠（' + d.completed + '/' + (c.target || 1) + '）');
+    if (!d.result.trim()) r.push('先寫實際結果');
+    hit.disabled = miss.disabled = !!r.length;
+    why.textContent = r.length ? '未可判定：' + r.join('；') + '。' : ''; why.hidden = !r.length;
+  };
+  ta.oninput = ni.oninput = sync; sync();
+  const decide = async v => {
+    const now = Date.now(), u = {result: d.result.trim(), completed: d.completed, verdict: v, verdictAt: now};
+    if (v === '命中') Object.assign(u, {status: '已入卡', srStage: 0, nextReviewAt: now + ivDays(0) * DAY, unused: 0});
+    else u.status = '已證偽';
+    delete S.vdraft[c.id];
+    await upd(c, u, v === '命中' ? '命中：模型入卡，明日第一次複習。' : '證偽：按結果修正模型，開新版本。');
+  };
+  hit.onclick = () => decide('命中'); miss.onclick = () => decide('證偽');
+  save.onclick = () => upd(c, {result: d.result.trim(), completed: d.completed}, '已儲存進度。');
+  later.onclick = () => upd(c, {dueAt: Math.max(c.dueAt || 0, today0()) + 7 * DAY}, '已延後 7 天。');
+  const row = el('div', 'row'); row.append(hit, miss, save, later);
+  box.append(rl, nl, why, row); host.append(box);
+}
+function reviewStart(c, host){
+  const box = el('div', 'vform');
+  box.append(el('p', null, '到期複習：合上資料，先重述這個模型。'));
+  const ta = el('textarea'); ta.maxLength = 3000; ta.placeholder = '寫下重述（也可只在心中重述）'; ta.setAttribute('aria-label', '重述');
+  ta.value = S.rdraft[c.id] || ''; ta.oninput = () => { S.rdraft[c.id] = ta.value; };
+  const b = btn('顯示模型對照', 'primary'); b.style.alignSelf = 'flex-start';
+  b.onclick = () => { S.reveal[c.id] = true; renderCards(); };
+  box.append(ta, b); host.append(box);
+}
+function reviewFinish(c, host){
+  const box = el('div', 'vform');
+  if (S.rdraft[c.id]) box.append(el('p', 'lbl', '你的重述'), el('p', 'mine', S.rdraft[c.id]));
+  const go = btn('完成複習', 'primary'); go.disabled = true; go.style.alignSelf = 'flex-start';
+  const sync = () => { go.disabled = !(q1.value() && q2.value()); };
+  const q1 = radios('r1-' + c.id, '對照之後，你的重述', [['pass', '過關'], ['fail', '講漏或講錯']], sync);
+  const q2 = radios('r2-' + c.id, '上次複習至今', [['used', '有用過'], ['unused', '沒用過']], sync);
+  go.onclick = async () => {
+    const pass = q1.value() === 'pass', used = q2.value() === 'used', now = Date.now();
+    const stage = pass ? (c.srStage || 0) + 1 : Math.max(0, (c.srStage || 0) - 1), unused = used ? 0 : (c.unused || 0) + 1, next = now + ivDays(stage) * DAY;
+    delete S.reveal[c.id]; delete S.rdraft[c.id];
+    await upd(c, {srStage: stage, nextReviewAt: next, unused, reviews: (c.reviews || 0) + 1, lastReviewAt: now},
+      '下次複習：' + fmtD(next) + (unused >= 2 ? '。連續兩次沒用過，建議歸檔。' : '。'));
+  };
+  const again = btn('有新數據：修正為新版本'); again.style.alignSelf = 'flex-start';
+  again.onclick = () => { delete S.reveal[c.id]; openCardForm(null, c); };
+  box.append(q1.el, q2.el, go, again); host.append(box);
+}
+function cardNode(c, now){
+  const a = el('article', 'card'), head = el('div', 'row'), due = !isArchived(c) && isDue(c, now);
+  const label = due ? (c.status === '驗證中' ? '到期：回填結果' : '到期：複習')
+    : c.supersededBy ? '已修正' : c.status === '已入卡' ? '複習中' : c.status;
+  head.append(el('span', 'tag' + (due || c.status === '已證偽' ? ' warn' : isArchived(c) ? ' dim' : ''), label), el('span', 'tag dim', 'v' + (c.version || 1)));
+  if (c.ctype) head.append(el('span', 'tag dim', c.ctype));
+  const acts = el('div', 'acts');
+  if (!isArchived(c)) { const ar = btn('歸檔'); ar.onclick = () => upd(c, {status: '已歸檔'}, '已歸檔。'); acts.append(ar); }
+  const del = btn('刪除', 'danger'); confirmBtn(del, '刪除', () => S.db.doc('cards/' + c.id).delete()); acts.append(del);
+  head.append(acts); a.append(head);
+  const src = c.bookTitle ? c.bookTitle + (c.chapter ? ' › ' + c.chapter : '') : c.sourceType === 'session' ? '來自推理' : '';
+  if (src) a.append(el('p', 'msg', src));
+  if (due && c.status === '已入卡' && !S.reveal[c.id]) { reviewStart(c, a); return a; }
+  a.append(kv([
+    ['第一性原理依據', c.basis], ['修正版模型', c.model], ['預測', c.pred], ['失敗條件', c.fail],
+    ['樣本', (c.completed || 0) + '/' + (c.target || 1)], ['到期日', c.status === '驗證中' ? fmtD(c.dueAt) : ''],
+    ['結果', c.result], ['判定', c.verdict ? c.verdict + '（' + fmtD(c.verdictAt) + '）' : '']
+  ]));
+  if (isArchived(c)) return a;
+  if (c.status === '驗證中') {
+    if (due || S.vdraft[c.id]) verdictForm(c, a, due);
+    else { const o = btn('提早回填／記錄進度'); o.style.alignSelf = 'flex-start'; o.onclick = () => { S.vdraft[c.id] = {result: c.result || '', completed: c.completed || 0}; renderCards(); }; a.append(o); }
+  }
+  else if (c.status === '已入卡') {
+    if (due) reviewFinish(c, a);
+    else {
+      a.append(el('p', 'msg', '下次複習：' + fmtD(c.nextReviewAt) + '（相隔 ' + ivDays(c.srStage || 0) + ' 天）' + (c.reviews ? '；已複習 ' + c.reviews + ' 次' : '')));
+      if ((c.unused || 0) >= 2) a.append(el('p', 'msg', '連續 ' + c.unused + ' 次複習都沒用過：建議歸檔。'));
+    }
+  } else if (c.status === '已證偽') { const r = btn('修正為新版本', 'primary'); r.style.alignSelf = 'flex-start'; r.onclick = () => openCardForm(null, c); a.append(r); }
+  return a;
+}
+function renderCards(){
+  renderDue();
+  const now = Date.now(), live = S.cards.filter(c => !isArchived(c));
+  const box = $('cardStats'); box.textContent = '';
+  for (const [n, l] of [[live.filter(c => c.status === '驗證中').length + '/' + WIP, '驗證中'], [dueCount() + ' 張', '到期'],
+    [live.filter(c => c.status === '已入卡').length + ' 張', '複習中'], [S.cards.filter(c => c.verdict === '命中').length + '／' + S.cards.filter(c => c.verdict === '證偽').length, '命中／證偽']]) {
+    const d = el('div', 'stat'); d.append(el('b', null, n), el('span', null, l)); box.append(d);
+  }
+  const list = $('cardList'); list.textContent = '';
+  if (!S.lc) { list.append(el('p', 'msg', '載入中…')); return; }
+  if (!S.cards.length) { list.append(el('p', 'msg', '未有模型卡。在記錄上按「升級為模型卡」，或按上面「＋ 新模型卡」。')); return; }
+  const by = k => (a, b) => (a[k] || 0) - (b[k] || 0);
+  const groups = [
+    ['到期', live.filter(c => isDue(c, now)).sort(by('dueAt'))],
+    ['驗證中', live.filter(c => c.status === '驗證中' && !isDue(c, now)).sort(by('dueAt'))],
+    ['複習中', live.filter(c => c.status === '已入卡' && !isDue(c, now)).sort(by('nextReviewAt'))],
+    ['已證偽，待修正', live.filter(c => c.status === '已證偽')]
+  ];
+  for (const [name, arr] of groups) if (arr.length) { list.append(el('h3', 'grp', name + '（' + arr.length + '）')); for (const c of arr) list.append(cardNode(c, now)); }
+  const arch = S.cards.filter(isArchived);
+  if (arch.length) {
+    const d = el('details', 'chap'), sm = el('summary'), inner = el('div', 'clist');
+    sm.append(el('span', null, '已歸檔'), el('span', 'n', arch.length + ' 張')); inner.style.padding = '0 10px 10px';
+    for (const c of newestFirst(arch)) inner.append(cardNode(c, now));
+    d.append(sm, inner); list.append(d);
+  }
+}
+
+/* ---------- 入定・推理: loop funnel, coin-flip experiment, sessions ---------- */
+function stat(box, pairs){ box.textContent = ''; for (const [n, l] of pairs) { const d = el('div', 'stat'); d.append(el('b', null, n), el('span', null, l)); box.append(d); } }
+function renderFlip(){
+  const f = flipNow(); $('flipOut').hidden = !f;
+  if (f) $('flipOut').textContent = (f.result === 'calm' ? '今次：入定' : '今次：不入定') + '（' + new Date(f.at + FLIP_MS).toLocaleTimeString('zh-HK', {hour: '2-digit', minute: '2-digit'}) + ' 前有效）';
+}
+function renderExperiment(){
+  const withCov = S.entries.filter(e => e.mode === 'A' && e.cover && e.cover.total > 0), assigned = withCov.filter(e => e.assigned);
+  const g = (arr, c) => arr.filter(e => !!e.calm === c).map(e => e.cover.hit / e.cover.total);
+  const useA = g(assigned, true).length >= MIN_GROUP && g(assigned, false).length >= MIN_GROUP;
+  const base = useA ? assigned : withCov, A = g(base, true), B = g(base, false);
+  const mean = v => v.reduce((s, x) => s + x, 0) / (v.length || 1);
+  const vari = v => { if (v.length < 2) return 0; const m = mean(v); return v.reduce((s, x) => s + (x - m) * (x - m), 0) / (v.length - 1); };
+  const pct = v => v.length ? Math.round(mean(v) * 100) + '%' : '—';
+  stat($('expStats'), [[A.length + ' 條 · ' + pct(A), '入定組：記錄數 · 平均覆蓋'], [B.length + ' 條 · ' + pct(B), '非入定組：記錄數 · 平均覆蓋'], [assigned.length + ' 條', '其中由擲硬幣分配']]);
+  let v;
+  if (A.length < MIN_GROUP || B.length < MIN_GROUP) v = '樣本未夠：入定組還差 ' + Math.max(0, MIN_GROUP - A.length) + ' 條，非入定組還差 ' + Math.max(0, MIN_GROUP - B.length) + ' 條（各需 ' + MIN_GROUP + ' 條內文頁核對）。';
+  else {
+    const diff = mean(A) - mean(B), se = Math.sqrt(vari(A) / A.length + vari(B) / B.length), t = se ? diff / se : (diff ? Infinity : 0), d = Math.abs(Math.round(diff * 100));
+    v = Math.abs(t) < 2 ? '兩組平均覆蓋率相差 ' + d + ' 個百分點，未能證實入定有影響（不等於證明無效）。'
+      : diff > 0 ? '入定組平均覆蓋率高 ' + d + ' 個百分點：初步支持假說。' : '入定組平均覆蓋率低 ' + d + ' 個百分點：與假說相反。';
+    v += useA ? '只計擲硬幣分配的記錄。' : '含自己揀入定的記錄，可能有偏差；擲硬幣的記錄夠多後，會改為只計它們。';
+  }
+  $('expVerdict').textContent = v;
+}
+function sessNode(s){
+  const a = el('article', 'entry'), head = el('div', 'row');
+  a.style.paddingLeft = a.style.paddingRight = '0';
+  head.append(el('span', 'tag', s.kind || '入定'), el('span', 'time', fmt(s.createdAt) + (s.minutes ? ' · ' + s.minutes + ' 分鐘' : '')));
+  const del = btn('刪除', 'danger'), acts = el('div', 'acts'); confirmBtn(del, '刪除', () => S.db.doc('sessions/' + s.id).delete());
+  acts.append(del); head.append(acts); a.append(head);
+  if (s.text) a.append(el('p', 'answer', s.text));
+  if (s.conclusion) a.append(el('p', 'lbl', '結論'), el('p', 'mine', s.conclusion));
+  if (s.kind === '推理' && (s.text || s.conclusion)) {
+    const n = S.cards.filter(c => c.sourceType === 'session' && c.sourceId === s.id).length;
+    if (n) { const l = el('a', 'link', '已有模型卡 ' + n + ' 張'); l.href = '#cards'; a.append(l); }
+    else { const up = btn('升級為模型卡'); up.style.alignSelf = 'flex-start'; up.onclick = () => openCardForm({type: 'session', id: s.id}); a.append(up); }
+  }
+  return a;
+}
+function renderPractice(){
+  const now = Date.now(), since = now - 56 * DAY, since4 = now - 28 * DAY;
+  const es = S.entries.filter(x => (x.createdAt || 0) >= since), ss = S.sessions.filter(x => (x.createdAt || 0) >= since);
+  const calmS = ss.filter(x => x.kind === '入定'), rea = ss.filter(x => x.kind === '推理');
+  const mins = arr => arr.reduce((n, x) => n + (Number(x.minutes) || 0), 0);
+  const made = S.cards.filter(c => (c.createdAt || 0) >= since), done = S.cards.filter(c => c.verdict && (c.verdictAt || 0) >= since);
+  const hits = done.filter(c => c.verdict === '命中').length, fixed = S.cards.filter(c => c.parentId && (c.createdAt || 0) >= since).length;
+  stat($('stats'), [
+    [es.length + ' 條', '閱讀記錄'], [es.filter(x => x.mode === 'A' && x.note).length + ' 條', '先重述再核對'],
+    [made.length + ' 張', '建立模型卡'], [done.length + ' 張', '完成結果回填（命中 ' + hits + '、證偽 ' + (done.length - hits) + '）'],
+    [fixed + ' 張', '證偽後修正'], [calmS.length + ' 節', '入定（' + mins(calmS) + ' 分鐘）'], [rea.length + ' 節', '推理（' + mins(rea) + ' 分鐘）']
+  ]);
+  let v = !es.length && !made.length && !ss.length ? '未有數據。'
+    : !es.length && !made.length ? '近 8 週沒有閱讀輸入，也沒有模型卡：入定和推理沒有外部原料。'
+    : !made.length ? '有閱讀輸入，但未建立任何模型卡：迴路未閉合。'
+    : !done.length ? '已建立模型卡，但未有結果回填：迴路未閉合。到期的卡在「模型卡」分頁。'
+    : '近 8 週完成 ' + done.length + ' 次結果回填（命中 ' + hits + '、證偽 ' + (done.length - hits) + '）：迴路已閉合。下一步看證偽後的修正，有否令預測更準。';
+  const es4 = S.entries.filter(x => (x.createdAt || 0) >= since4).length, done4 = S.cards.filter(c => c.verdict && (c.verdictAt || 0) >= since4).length;
+  if (es4 >= 10 && !done4) v += ' 警告：近 4 週閱讀記錄 ' + es4 + ' 條，但沒有結果回填，系統可能太重，要刪減。';
+  $('verdict').textContent = v;
+  renderExperiment(); renderFlip();
+  const list = $('sessList'); list.textContent = '';
+  if (!S.ls) { list.append(el('p', 'msg', '載入中…')); return; }
+  if (!S.sessions.length) { list.append(el('p', 'msg', '未有記錄。每次入定或推理後，在上面加一節。')); return; }
+  for (const x of S.sessions.slice(0, 50)) list.append(sessNode(x));
+}
+$('flipBtn').onclick = async () => {
+  const f = {result: (crypto.getRandomValues(new Uint8Array(1))[0] & 1) ? 'calm' : 'none', at: Date.now()};
+  S.flip = f; if (!S.calmTouched) $('calm').checked = f.result === 'calm';
+  renderFlip(); renderComposer();
+  if (S.db) try { await S.db.doc('practice/flip').set(f); } catch (e) {}
+};
+$('sessForm').addEventListener('submit', async ev => {
+  ev.preventDefault(); if (!S.db) return;
+  const text = $('sText').value.trim(), conclusion = $('sConcl').value.trim(), minutes = Math.max(0, Math.min(1440, Math.round(Number($('sMin').value) || 0)));
+  if (!minutes && !text) { msgTo('pSay', '請填分鐘或內容。'); return; }
+  $('sSave').disabled = true;
+  try { await S.db.collection('sessions').add({kind: $('sKind').value, minutes, text, conclusion, createdAt: Date.now()}); $('sText').value = $('sConcl').value = $('sMin').value = ''; msgTo('pSay', '已儲存。'); }
+  catch (e) { msgTo('pSay', e && e.code === 'quota_exceeded' ? '記錄庫已滿，請先刪除舊記錄。' : '未能儲存，請再試。'); }
+  $('sSave').disabled = false;
+});
+$('defSave').onclick = async () => {
+  if (!S.db) return;
+  $('defSave').disabled = true;
+  try { await S.db.doc('practice/defs').set({calm: $('defCalm').value.trim(), reason: $('defReason').value.trim(), updatedAt: Date.now()}); S.defsLoaded = true; msgTo('defSay', '已儲存。'); }
+  catch (e) { msgTo('defSay', '未能儲存，請再試。'); }
+  $('defSave').disabled = false;
+};
+
+/* ---------- backup: export / import ---------- */
+const blobToDataUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+function dataUrlToBlob(du){
+  const m = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(du || '');
+  if (!m) return null;
+  const bin = atob(m[2]), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], {type: m[1]});
+}
+async function saveFile(name, text){
+  if (S.local) {
+    const u = URL.createObjectURL(new Blob([text], {type: name.endsWith('.json') ? 'application/json' : 'text/markdown'}));
+    const a = el('a'); a.href = u; a.download = name; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 10000); return 'saved';
+  }
+  if (!S.downloads) throw {code: 'unavailable'};
+  return (await S.downloads.save({filename: name, data: text})).status;
+}
+function saveMsg(e){
+  const c = e && e.code;
+  return c === 'declined' ? '已取消下載。' : c === 'rate_limited' ? '下載視窗已開啟，請先處理。' : c === 'too_large' ? '檔案太大，未能下載。' : '這個畫面不能下載檔案。';
+}
+const stamp = () => dateVal(Date.now());
+$('expJson').onclick = async () => {
+  $('expJson').disabled = true; msgTo('bkSay', '準備備份…');
+  try {
+    const images = {}, ids = new Set();
+    for (const e of S.entries) for (const id of (e.assetIds || [])) ids.add(id);
+    let miss = 0;
+    for (const id of ids) { try { const b = await getBlob(id); if (b) images[id] = await blobToDataUrl(b); else miss++; } catch (e) { miss++; } }
+    const data = {app: '睇書記錄', format: 2, exportedAt: new Date().toISOString(), entries: S.entries, cards: S.cards, sessions: S.sessions,
+      practice: {goal: $('goal').value.trim(), calm: $('defCalm').value.trim(), reason: $('defReason').value.trim()}, images};
+    const st = await saveFile('睇書記錄-備份-' + stamp() + '.json', JSON.stringify(data));
+    msgTo('bkSay', (st === 'saved' ? '已匯出：記錄 ' + S.entries.length + ' 條、相片 ' + Object.keys(images).length + ' 張、模型卡 ' + S.cards.length + ' 張。' : '已交出檔案。') + (miss ? '有 ' + miss + ' 張相片讀取失敗。' : ''));
+  } catch (e) { msgTo('bkSay', saveMsg(e)); }
+  $('expJson').disabled = false;
+};
+function toMarkdown(){
+  const L = ['# 睇書記錄', '', '匯出：' + fmt(Date.now()), ''], books = new Map();
+  for (const e of S.entries) { const k = bookOf(e); if (!books.has(k)) books.set(k, new Map()); const ch = books.get(k), c = e.chapter || NOCHAP; if (!ch.has(c)) ch.set(c, []); ch.get(c).push(e); }
+  for (const [bk, chs] of books) {
+    const ty = typeFor(bk); L.push('## ' + bk + (ty ? '（' + ty + '）' : ''), '');
+    for (const [ch, list] of chs) {
+      L.push('### ' + ch, '');
+      for (const e of list) {
+        L.push('#### ' + fmt(e.createdAt) + (e.mode ? ' · ' + (e.mode === 'B' ? '篩書' : '核對') : '') + (e.cover ? ' · 覆蓋 ' + e.cover.hit + '/' + e.cover.total : '') + (e.mode === 'A' && e.wrong != null ? ' · 講錯 ' + e.wrong : ''), '');
+        if (e.assetIds && e.assetIds.length) L.push('（相片 ' + e.assetIds.length + ' 張，見 JSON 備份）', '');
+        if (e.note) L.push('**我的重述**', '', e.note, '');
+        if (e.answer) L.push('**答覆**', '', e.answer, '');
+      }
+    }
+  }
+  if (S.cards.length) {
+    L.push('## 模型卡', '');
+    for (const c of S.cards) {
+      L.push('### v' + (c.version || 1) + ' · ' + (c.supersededBy ? '已修正' : c.status) + (c.bookTitle ? ' · ' + c.bookTitle : ''), '');
+      for (const [k, v] of [['第一性原理依據', c.basis], ['修正版模型', c.model], ['類型', (c.ctype || '') + '，樣本 ' + (c.completed || 0) + '/' + (c.target || 1)], ['預測', c.pred], ['失敗條件', c.fail], ['到期日', fmtD(c.dueAt)], ['結果', c.result], ['判定', c.verdict]]) if (v) L.push('- ' + k + '：' + v);
+      L.push('');
+    }
+  }
+  if (S.sessions.length) {
+    L.push('## 入定與推理', '');
+    for (const s of S.sessions) L.push('- ' + fmt(s.createdAt) + ' · ' + s.kind + (s.minutes ? ' · ' + s.minutes + ' 分鐘' : '') + (s.text ? '：' + s.text : '') + (s.conclusion ? '（結論：' + s.conclusion + '）' : ''));
+  }
+  return L.join('\n');
+}
+$('expMd').onclick = async () => {
+  try { const st = await saveFile('睇書筆記-' + stamp() + '.md', toMarkdown()); msgTo('bkSay', st === 'saved' ? '已匯出筆記。' : '已交出檔案。'); }
+  catch (e) { msgTo('bkSay', saveMsg(e)); }
+};
+$('impFile').onchange = async () => {
+  const f = $('impFile').files[0]; $('impFile').value = '';
+  if (!f || !S.db) return;
+  let data;
+  try { data = JSON.parse(await f.text()); } catch (e) { msgTo('bkSay', '這個檔案不是有效的 JSON。'); return; }
+  if (!data || data.app !== '睇書記錄' || !Array.isArray(data.entries)) { msgTo('bkSay', '這個檔案不是睇書記錄的備份。'); return; }
+  msgTo('bkSay', '匯入中…');
+  const okId = id => typeof id === 'string' && /^[A-Za-z0-9_\-~:@+][A-Za-z0-9_\-.~:@+]{0,199}$/.test(id);
+  const imgMap = {}, n = {e: 0, c: 0, s: 0, skip: 0, img: 0};
+  const put = async (coll, have, items, fix) => {
+    for (const it of Array.isArray(items) ? items : []) {
+      if (!it || typeof it !== 'object' || !okId(it.id) || have.has(it.id)) { n.skip++; continue; }
+      const {id, ...rest} = it;
+      if (fix) await fix(rest);
+      await S.db.doc(coll + '/' + id).set(clean(rest)); have.add(id); n[coll[0]]++;
+    }
+  };
+  try {
+    await put('entries', new Set(S.entries.map(x => x.id)), data.entries, async rest => {
+      const ids = [];
+      for (const a of Array.isArray(rest.assetIds) ? rest.assetIds : []) {
+        if (imgMap[a]) { ids.push(imgMap[a]); continue; }
+        const b = data.images ? dataUrlToBlob(data.images[a]) : null;
+        if (!b || !S.assets) { n.img++; continue; }
+        try { const r = await S.assets.upload(b, {type: b.type}); imgMap[a] = r.id; ids.push(r.id); } catch (e) { n.img++; }
+      }
+      rest.assetIds = ids;
+    });
+    await put('cards', new Set(S.cards.map(x => x.id)), data.cards);
+    await put('sessions', new Set(S.sessions.map(x => x.id)), data.sessions);
+    const p = data.practice || {};
+    if (p.goal && !$('goal').value.trim()) { $('goal').value = p.goal; await S.db.doc('practice/goal').set({text: p.goal, updatedAt: Date.now()}); }
+    if ((p.calm || p.reason) && !$('defCalm').value.trim() && !$('defReason').value.trim()) {
+      $('defCalm').value = p.calm || ''; $('defReason').value = p.reason || '';
+      await S.db.doc('practice/defs').set({calm: p.calm || '', reason: p.reason || '', updatedAt: Date.now()});
+    }
+    msgTo('bkSay', '已匯入：記錄 ' + n.e + ' 條、模型卡 ' + n.c + ' 張、入定推理 ' + n.s + ' 節。' + (n.skip ? '已存在或無效的 ' + n.skip + ' 項略過。' : '') + (n.img ? '有 ' + n.img + ' 張相片未能匯入。' : ''));
+  } catch (e) { msgTo('bkSay', (e && e.code === 'quota_exceeded' ? '記錄庫已滿，' : '') + '匯入中途失敗：已匯入記錄 ' + n.e + ' 條、模型卡 ' + n.c + ' 張；再匯入一次會略過已存在的項目。'); }
+};
+
+/* ---------- start ---------- */
+const VIEWS = {log: 'Log', cards: 'Cards', method: 'Method', practice: 'Practice'};
+function route(){
+  const h = VIEWS[location.hash.slice(1)] || 'Log';
+  for (const v of Object.values(VIEWS)) {
+    $('view' + v).hidden = v !== h;
+    const t = $('tab' + v); t.classList.toggle('on', v === h);
+    if (v === h) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  }
+}
+function renderAll(){ renderComposer(); renderRecords(); renderCards(); renderPractice(); }
+function renderWhere(inClaude){
+  const p = $('whereAmI'), a = el('a', 'link'); p.textContent = '';
+  a.target = '_blank'; a.rel = 'noopener';
+  if (inClaude) { a.href = PAGES_URL; a.textContent = '打開 GitHub 版（備用）'; p.append('你正在用 Claude 版：上載後自動答覆，記錄跟你的 Claude 帳戶。'); }
+  else { a.href = CLAUDE_URL; a.textContent = '打開 Claude 版'; p.append('你正在用 GitHub 版：記錄只存在這部裝置的瀏覽器，答覆要複製到 Claude 取得。'); }
+  p.append(' ', a);
+}
+async function start(){
+  const inClaude = !!(window.claude && window.claude.use);
+  renderWhere(inClaude);
+  const use = n => inClaude ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+  const [db, sample, assets, downloads] = await Promise.all([use('db'), use('sample'), use('assets'), use('downloads')]);
+  S.sample = sample; S.downloads = downloads;
+  if (db) { S.db = db; S.assets = assets; }
+  else if (!inClaude && window.indexedDB) {
+    try { await idb(); S.local = true; S.db = localDb(); S.assets = localAssets(); } catch (e) {}
+  }
+  if (!S.db) {
+    S.le = S.lc = S.ls = true; renderAll();
+    notice(inClaude ? '未能連接記錄庫。請登入後在 Claude 內打開這個頁面。' : '這個瀏覽器不支援本機儲存，未能保存記錄。');
+    for (const id of ['saveOnlyBtn', 'askBtn', 'copyBtn', 'expJson', 'expMd', 'newCardBtn', 'flipBtn', 'sSave', 'defSave']) $(id).disabled = true;
+    return;
+  }
+  if (!sample) {
+    $('askBtn').hidden = true; $('copyBtn').hidden = false;
+    notice(S.local
+      ? '這個網址不能直接取得答覆：寫好重述、上載相片後按「複製提問文字並儲存」，到 Claude 連同相片發送，再在記錄上按「貼上答覆」。記錄只存在這部裝置的這個瀏覽器，請定期匯出備份。'
+      : '這個畫面未能使用 Claude 答覆，可改按「複製提問文字並儲存」。');
+  } else {
+    const caps = await sample.limits().catch(() => null);
+    S.maxImg = caps && caps.images ? caps.images.maxCount : 0;
+    if (!S.maxImg) notice('這個畫面未能把相片交給 Claude，答覆只會根據你輸入的文字。');
+  }
+  if (!S.local && !downloads) $('backupHint').textContent = '這個畫面不能下載檔案，只可匯入備份。';
+  const timer = setTimeout(() => { if (!S.le || !S.lc) notice('暫時未能讀取記錄，連線恢復後會自動顯示。'); }, 10000);
+  const loaded = () => { if (S.le && S.lc) { clearTimeout(timer); if ($('notice').textContent.indexOf('暫時未能讀取') === 0) notice(''); } };
+  const dead = () => { S.le = S.lc = S.ls = true; clearTimeout(timer); renderAll(); notice('記錄庫連線已中斷，請重新打開這個頁面。'); };
+  S.db.collection('entries').onSnapshot(s => {
+    S.entries = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); S.le = true; loaded();
+    renderRecords(); renderCards(); renderPractice(); renderComposer();
+  }, dead);
+  S.db.collection('cards').onSnapshot(s => {
+    S.cards = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); S.lc = true; loaded();
+    renderCards(); renderRecords(); renderPractice(); renderCardCheck();
+  }, dead);
+  S.db.collection('sessions').onSnapshot(s => {
+    S.sessions = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); S.ls = true; renderPractice();
+  }, dead);
+  S.db.collection('practice').onSnapshot(s => {
+    const get = id => { const d = s.docs.find(x => x.id === id); return d ? (d.data() || {}) : null; };
+    const g = get('goal'), d = get('defs'), f = get('flip');
+    if (g && !S.goalLoaded) { S.goalLoaded = true; if (document.activeElement !== $('goal')) $('goal').value = g.text || ''; }
+    if (d && !S.defsLoaded) { S.defsLoaded = true; $('defCalm').value = d.calm || ''; $('defReason').value = d.reason || ''; }
+    if (f && f.at && (!S.flip || f.at > S.flip.at)) { S.flip = {result: f.result, at: f.at}; if (!S.calmTouched && flipNow()) $('calm').checked = f.result === 'calm'; }
+    renderFlip(); renderComposer();
+  }, () => {});
+}
+window.addEventListener('hashchange', route);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderCards(); renderComposer(); renderFlip(); } });
+if (!load('reading-log:migrated')) { const old = load('draft-note'); if (old && !load(DRAFT_KEY)) store(DRAFT_KEY, old); store('reading-log:migrated', '1'); }
+$('note').value = load(DRAFT_KEY);
+route(); renderAll(); start();
+})();
+</script>
+</body>
+</html>

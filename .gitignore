@@ -1,0 +1,14 @@
+# build 產物（Claude 版不 commit）
+dist/
+__pycache__/
+*.pyc
+
+# repo 公開：不要 commit 用戶備份、筆記、書頁相片
+*.json
+睇書筆記-*.md
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.heic
+!src/bg.jpg
