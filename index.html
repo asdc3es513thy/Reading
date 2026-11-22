@@ -434,7 +434,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-22 · 94ce3aa · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-22 · 9837e6c · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -703,7 +703,7 @@ function errCopy(code){
     case 'no_pass': return '請先在上面輸入通行碼。';
     case 'empty': return 'AI 沒有回覆任何內容，未儲存，請再試一次。';
     case 'bad_pass': return '通行碼不正確，請檢查後再試。';
-    case 'not_configured': case 'server_key': return '網站的 AI 金鑰未設定好或已失效，請在 Vercel 檢查 GITHUB_TOKEN、GEMINI_API_KEY 和 APP_PASSCODE。';
+    case 'not_configured': case 'server_key': return '網站的 AI 金鑰未設定好或已失效，請在 Vercel 檢查 OPENROUTER_API_KEY、GITHUB_TOKEN、GEMINI_API_KEY 和 APP_PASSCODE。';
     case 'too_many_images': return '相片太多，一次最多 ' + S.maxImg + ' 張。';
     case 'refused': return 'AI 拒絕處理這個內容，請換一張相片或修改文字。';
     case 'prompt_too_large': return '文字太長，請縮短你的重述。';
@@ -1434,7 +1434,7 @@ async function detectApi(){
     return c && c.app === '睇書記錄' && c.configured ? c : null;
   } catch (e) { return null; }
 }
-const ENGINE = {github: 'GitHub Models', gemini: 'Gemini'};
+const ENGINE = {openrouter: 'OpenRouter', github: 'GitHub Models', gemini: 'Gemini'};
 function renderWhere(inClaude, web){
   const p = $('whereAmI'), a = el('a', 'link'); p.textContent = '';
   a.target = '_blank'; a.rel = 'noopener';

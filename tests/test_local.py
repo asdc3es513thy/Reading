@@ -227,6 +227,12 @@ def api_check():
     check(o['ghRedirect'].get('provider') == 'github' and o['ghRedirectReq'][:2] == ['POST /inference/chat/completions', 'POST /inference2/chat/completions'], 'API：GitHub 轉址後仍用 POST 送出提問')
     check(o['ghOk'].get('provider') == 'github' and o['ghOkReq'][0].startswith('/inference/chat/completions openai/gpt-4.1') and o['ghOkReq'][-1].startswith('/azure/chat/completions gpt-4.1') and o['ghOkReq'][0].endswith('reading-log'), 'API：GitHub 回純文字「OK」時改試舊入口（型號名無前綴）')
     check(o['ghOkStream'].get('provider') == 'github' and o['ghOkStreamReq'] == ['true', 'false'], 'API：串流只回「OK」時改用非串流再試')
+    check(o['orGet'] == ['openrouter', 'github', 'gemini'], 'API：OpenRouter 排第一，然後 GitHub、Gemini')
+    r0 = o['orReq'][0] if o['orReq'] else {}
+    check(len(o['orReq']) == 1 and r0.get('auth') == 'Bearer or-test' and r0.get('title') == 'Reading Log' and r0.get('model') == 'openrouter/free' and r0.get('content', [{}])[0].get('type') == 'image_url', 'API：OpenRouter 請求（金鑰、預設免費模型、相片）')
+    check(''.join(l.get('t', '') for l in o['or']) == '書名：《OR》' and o['or'][-1].get('provider') == 'openrouter', 'API：OpenRouter 串流答覆完整（略過 PROCESSING 註解行）')
+    check(o['or429'].get('provider') == 'github' and o['or429Models'][:2] == ['openrouter/free', 'google/gemma-4-31b-it:free'], 'API：OpenRouter 兩個免費模型都用不到時改用 GitHub')
+    check(o['orSearchFirst'].startswith('/v1/models/gemini'), 'API：有 OpenRouter 時新書推介仍先用 Gemini 搜尋')
     check(o['ghEmpty'].get('provider') == 'gemini', 'API：GitHub 沒有文字時改用 Gemini')
     check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'github', 'API：GitHub 一次過 JSON 答覆也讀得到')
     check(o['allDown'].get('error') == 'upstream' and o['allDown'].get('detail', '').startswith('github 500') and '；gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時列出每個引擎的原因')

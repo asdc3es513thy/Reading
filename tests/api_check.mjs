@@ -9,7 +9,15 @@ const fake = http.createServer((req, res) => {
   let body = '';
   req.on('data', c => { body += c; });
   req.on('end', () => {
-    seen.push({ua: req.headers['user-agent'] || '', path: req.url, method: req.method, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
+    seen.push({title: req.headers['x-title'] || '', ua: req.headers['user-agent'] || '', path: req.url, method: req.method, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
+    if (req.url.startsWith('/openrouter/')) {
+      if (mode === 'or429') { res.writeHead(429, {'content-type': 'application/json'}); return res.end('{"error":{"message":"Rate limit exceeded: free-models-per-day","code":429}}'); }
+      res.writeHead(200, {'content-type': 'text/event-stream'});
+      res.write(': OPENROUTER PROCESSING\n\n');
+      res.write(`data: ${JSON.stringify({choices: [{index: 0, delta: {content: '書名：《OR》'}, finish_reason: null}]})}\n\n`);
+      res.write(`data: ${JSON.stringify({choices: [{index: 0, delta: {}, finish_reason: 'stop'}]})}\n\ndata: [DONE]\n\n`);
+      return res.end();
+    }
     if (req.url.startsWith('/inference/') && mode === 'ghredirect') {
       res.writeHead(302, {location: '/inference2/chat/completions'});
       return res.end();
@@ -165,6 +173,22 @@ delete process.env.GITHUB_TOKEN;
 mode = 'quota';
 out.quota = (await last({pass: 'secret', prompt: 'p'})).pop();
 process.env.GITHUB_TOKEN = 'gh-test';
+// ---- OpenRouter 做主引擎 ----
+process.env.OPENROUTER_API_KEY = 'or-test'; process.env.OPENROUTER_URL = `http://127.0.0.1:${fake.address().port}/openrouter/chat/completions`;
+out.orGet = (await api.GET().json()).providers;
+mode = 'or';
+b4 = seen.length;
+out.or = await last({pass: 'secret', prompt: '提問', images: [{type: 'image/png', data: 'AAAA'}]});
+out.orReq = seen.slice(b4).map(x => ({path: x.path, auth: x.auth, title: x.title, model: x.body.model, content: x.body.messages && x.body.messages[0].content}));
+mode = 'or429';
+b4 = seen.length;
+out.or429 = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.or429Models = seen.slice(b4).map(x => x.body.model || x.path.split('?')[0]);
+mode = 'search';
+b4 = seen.length;
+await last({pass: 'secret', prompt: 'p', search: true});
+out.orSearchFirst = seen[b4].path.split('?')[0];
+delete process.env.OPENROUTER_API_KEY;
 delete process.env.GEMINI_API_KEY;
 out.ghOnlyGet = (await api.GET().json()).providers;
 

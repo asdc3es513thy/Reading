@@ -1,7 +1,8 @@
 // Vercel 函數：把頁面的提問和書頁相片轉交 AI，逐段串流答覆。
-// 主引擎：GitHub Models（環境變數 GITHUB_TOKEN，fine-grained token，只需 Models: Read）；
-// 後備：Google Gemini（GEMINI_API_KEY）。另需 APP_PASSCODE（通行碼，防止別人用你的額度）。
-// 兩個金鑰設一個也可以；都設時，GitHub 出錯、額度用完或輸入太長，就自動改用 Gemini。
+// 引擎次序：OpenRouter（OPENROUTER_API_KEY）→ GitHub Models（GITHUB_TOKEN，fine-grained token，只需 Models: Read）
+// → Google Gemini（GEMINI_API_KEY）。另需 APP_PASSCODE（通行碼，防止別人用你的額度）。
+// 金鑰設一個也可以；前一個出錯、額度用完或輸入太長，就自動改用下一個。
+// 可選：OPENROUTER_MODELS（逗號分隔；預設 openrouter/free,google/gemma-4-31b-it:free）。
 // 可選：GITHUB_MODELS（逗號分隔，按次序試；預設 openai/gpt-4.1,openai/o4-mini）；GITHUB_MODELS_URL（入口，逗號分隔）；
 // GEMINI_MODEL（預設 gemini-3.8-pro,gemini-3.8-flash）；GEMINI_THINKING（LOW／MEDIUM／HIGH／XHIGH／OFF，預設 XHIGH）。
 // 請求可加 search: true（新書推介）：要用 Google 搜尋，所以先用 Gemini，GitHub 做後備（後備沒有搜尋）。
@@ -10,6 +11,8 @@ import {GoogleGenAI, ApiError} from '@google/genai';
 
 const GITHUB_URLS = 'https://models.github.ai/inference/chat/completions';
 const GITHUB_DEFAULT = 'openai/gpt-4.1,openai/o4-mini';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_DEFAULT = 'openrouter/free,google/gemma-4-31b-it:free';
 const GEMINI_DEFAULT = 'gemini-3.8-pro,gemini-3.8-flash';
 const MAX_IMAGES = 4;
 const MAX_PROMPT = 60000;
@@ -20,7 +23,7 @@ const json = (status, body) => new Response(JSON.stringify(body), {
   status, headers: {'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store'}
 });
 const list = (v, d) => String(v || d).split(',').map(m => m.trim()).filter(Boolean);
-const providers = () => [process.env.GITHUB_TOKEN ? 'github' : '', process.env.GEMINI_API_KEY ? 'gemini' : ''].filter(Boolean);
+const providers = () => [process.env.OPENROUTER_API_KEY ? 'openrouter' : '', process.env.GITHUB_TOKEN ? 'github' : '', process.env.GEMINI_API_KEY ? 'gemini' : ''].filter(Boolean);
 const configured = () => !!(providers().length && process.env.APP_PASSCODE);
 
 class ProviderError extends Error {
@@ -61,7 +64,9 @@ export async function POST(request) {
       for (const p of order) {
         let opened, sent = false;
         try {
-          opened = p === 'github' ? await openGithub(images, prompt, request.signal) : await openGemini(images, prompt, request.signal, search);
+          opened = p === 'openrouter' ? await openOpenRouter(images, prompt, request.signal)
+            : p === 'github' ? await openGithub(images, prompt, request.signal)
+            : await openGemini(images, prompt, request.signal, search);
           for await (const ev of opened.events) {
             if (ev.t) { sent = true; send({t: ev.t}); }
             else if (ev.end) {
@@ -125,7 +130,7 @@ async function openGithubAt(url, images, prompt, signal) {
         break;
       }
       ct = r.headers.get('content-type') || '';
-      if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'github', model, events: githubEvents(r)};
+      if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'github', model, events: chatEvents(r, 'github')};
       txt = await r.text().catch(() => '');
       plain = r.ok;
       if (!plain) break;
@@ -154,7 +159,47 @@ async function postFollow(url, headers, body, signal) {
   throw new ProviderError('upstream', 0, 'github 轉址太多次');
 }
 
-async function* githubEvents(r) {
+/* ---------- OpenRouter（OpenAI 格式，SSE 串流；香港免 VPN，由 Vercel 伺服器連線）---------- */
+async function openOpenRouter(images, prompt, signal) {
+  const url = process.env.OPENROUTER_URL || OPENROUTER_URL;
+  const content = [
+    ...images.map(im => ({type: 'image_url', image_url: {url: `data:${im.type};base64,${im.data}`}})),
+    {type: 'text', text: prompt}
+  ];
+  const errs = [];
+  let code = 'upstream';
+  for (const model of list(process.env.OPENROUTER_MODELS, OPENROUTER_DEFAULT)) {
+    let r;
+    try {
+      r = await fetch(url, {
+        method: 'POST', signal,
+        headers: {
+          authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'content-type': 'application/json',
+          accept: 'text/event-stream',
+          'x-title': 'Reading Log'
+        },
+        body: JSON.stringify({model, stream: true, messages: [{role: 'user', content}]})
+      });
+    } catch (e) {
+      if (e && e.name === 'AbortError') throw e;
+      errs.push(`${model} ${short(e && e.message)}`); code = 'network';
+      continue;
+    }
+    const ct = r.headers.get('content-type') || '';
+    if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'openrouter', model, events: chatEvents(r, 'openrouter')};
+    const txt = await r.text().catch(() => '');
+    code = r.status === 401 || r.status === 403 ? 'server_key'
+      : r.status === 402 || r.status === 429 ? 'rate_limited'
+      : r.status === 413 || /token.*(limit|large)|context length/i.test(txt) ? 'prompt_too_large'
+      : r.status === 400 && /image/i.test(txt) ? 'image_rejected'
+      : 'upstream';
+    errs.push(`${model} ${r.status} ${innerMessage(txt)}`);
+  }
+  throw new ProviderError(code, 0, errs.join(' ／ '));
+}
+
+async function* chatEvents(r, name) {
   const rd = r.body.getReader(), dec = new TextDecoder();
   let buf = '', finish = '', raw = '', got = false;
   const handle = function* (line) {
@@ -186,7 +231,7 @@ async function* githubEvents(r) {
     const c = j && j.choices && j.choices[0];
     const text = c && c.message && typeof c.message.content === 'string' ? c.message.content : '';
     if (text) { yield {t: text}; finish = c.finish_reason || finish; }
-    else if (finish !== 'content_filter') throw new ProviderError('upstream', 0, `github 沒有回覆內容（${r.status} ${r.headers.get('content-type') || ''} ${r.url || ''}）` + innerMessage(raw));
+    else if (finish !== 'content_filter') throw new ProviderError('upstream', 0, `${name} 沒有回覆內容（${r.status} ${r.headers.get('content-type') || ''} ${r.url || ''}）` + innerMessage(raw));
   }
   yield {end: true, truncated: finish === 'length', refused: finish === 'content_filter', stop: finish};
 }

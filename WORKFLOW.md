@@ -9,22 +9,24 @@
 | | Claude 版 | Vercel 網頁版 | GitHub 版 |
 |---|---|---|---|
 | 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
-| 答覆 | Claude 自動答覆 | GitHub Models 自動答覆，Gemini 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
+| 答覆 | Claude 自動答覆 | OpenRouter 自動答覆，GitHub Models、Gemini 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
 | 新書推介 | 沒有 | 有（每星期自動） | 沒有 |
 | 記錄存放 | Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
 
 - 三個版本的記錄**互不相通**，只能用「匯出／匯入備份」搬（見第七節）。
 - 頁底的版本號三邊相同，即代表程式已同步。
-- 答覆深度：Claude 版最深入。Vercel 版先用 GitHub Models（gpt-4.1，再 o4-mini）；出錯、額度用完或輸入太長，自動改用 Gemini（先 Pro 後 Flash，最高思考深度）。
+- 答覆深度：Claude 版最深入。Vercel 版先用 OpenRouter 免費模型，再 GitHub Models（gpt-4.1，再 o4-mini）；出錯、額度用完或輸入太長，自動改用 Gemini（先 Pro 後 Flash，最高思考深度）。
 
 ---
 
 ## 二、第一次設定（只做一次，Vercel 版用）
 
 1. **取得金鑰**（金鑰不要貼在任何對話，也不要放上 GitHub；外洩了就即刻刪除、重開）：
-   - 主引擎 GitHub Models：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate，權限只開 **Models: Read**。
+   - 第一引擎 OpenRouter（香港免 VPN）：openrouter.ai → Keys → Create Key。
+   - 第二引擎 GitHub Models：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate，權限只開 **Models: Read**。
    - 後備 Gemini（新書推介也要用）：aistudio.google.com → Get API key → Create API key。
 2. **Vercel 加環境變數**：專案 → Settings → Environment Variables（手機版在「☰」選單內），類型揀 Secret：
+   - `OPENROUTER_API_KEY`：OpenRouter 金鑰
    - `GITHUB_TOKEN`：GitHub 金鑰
    - `GEMINI_API_KEY`：Gemini 金鑰
    - `APP_PASSCODE`：自訂通行碼（大細楷有分，記住它）
@@ -37,6 +39,7 @@
 
 | 變數 | 作用 | 預設 |
 |---|---|---|
+| `OPENROUTER_MODELS` | OpenRouter 模型次序，逗號分隔 | `openrouter/free,google/gemma-4-31b-it:free` |
 | `GITHUB_MODELS` | GitHub 模型次序，逗號分隔 | `openai/gpt-4.1,openai/o4-mini` |
 | `GEMINI_MODEL` | Gemini 模型次序，逗號分隔 | `gemini-3.8-pro,gemini-3.8-flash` |
 | `GEMINI_THINKING` | 思考深度 `LOW`／`MEDIUM`／`HIGH`／`XHIGH`／`OFF` | `XHIGH` |
