@@ -693,7 +693,7 @@ function errCopy(code){
     case 'session_expired': return '登入已過期，請重新登入後再試。';
     case 'no_pass': return '請先在上面輸入通行碼。';
     case 'bad_pass': return '通行碼不正確，請檢查後再試。';
-    case 'not_configured': case 'server_key': return '網站未設定好 Claude 金鑰，請在 Vercel 檢查 ANTHROPIC_API_KEY 和 APP_PASSCODE。';
+    case 'not_configured': case 'server_key': return '網站未設定好 Gemini 金鑰，請在 Vercel 檢查 GEMINI_API_KEY 和 APP_PASSCODE。';
     case 'too_many_images': return '相片太多，一次最多 ' + S.maxImg + ' 張。';
     case 'refused': return 'Claude 拒絕處理這個內容，請換一張相片或修改文字。';
     case 'prompt_too_large': return '文字太長，請縮短你的重述。';
@@ -1316,7 +1316,7 @@ function route(){
   }
 }
 function renderAll(){ renderComposer(); renderRecords(); renderCards(); renderPractice(); }
-/* ---------- web answers: same-site /api/ask (Vercel), used only outside Claude ---------- */
+/* ---------- web answers: same-site /api/ask (Vercel, Gemini), used only outside Claude ---------- */
 const PASS_KEY = 'reading-log:api-pass';
 function remoteSample(max){
   const ask = async (prompt, opts = {}) => {
@@ -1370,7 +1370,7 @@ async function detectApi(){
 function renderWhere(inClaude, web){
   const p = $('whereAmI'), a = el('a', 'link'); p.textContent = '';
   a.target = '_blank'; a.rel = 'noopener';
-  if (web) { a.href = CLAUDE_URL; a.textContent = '打開 Claude 版'; p.append('你正在用網頁版：上載後經本網站取得 Claude 答覆，記錄只存在這部裝置的瀏覽器。'); }
+  if (web) { a.href = CLAUDE_URL; a.textContent = '打開 Claude 版'; p.append('你正在用網頁版：上載後經本網站取得 Gemini 答覆，記錄只存在這部裝置的瀏覽器。'); }
   else if (inClaude) { a.href = PAGES_URL; a.textContent = '打開 GitHub 版（備用）'; p.append('你正在用 Claude 版：上載後自動答覆，記錄跟你的 Claude 帳戶。'); }
   else { a.href = CLAUDE_URL; a.textContent = '打開 Claude 版'; p.append('你正在用 GitHub 版：記錄只存在這部裝置的瀏覽器，答覆要複製到 Claude 取得。'); }
   p.append(' ', a);

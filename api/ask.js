@@ -1,20 +1,22 @@
-// Vercel 函數：把頁面的提問和書頁相片轉交 Claude，逐段串流答覆。
-// 需要在 Vercel 設定環境變數：ANTHROPIC_API_KEY（API 金鑰）、APP_PASSCODE（通行碼，防止別人用你的額度）。
+// Vercel 函數：把頁面的提問和書頁相片轉交 Google Gemini（免費額度），逐段串流答覆。
+// 需要在 Vercel 設定環境變數：GEMINI_API_KEY（Google AI Studio 的 API 金鑰）、APP_PASSCODE（通行碼，防止別人用你的額度）。
+// 可選：GEMINI_MODEL（預設 gemini-3.8-flash）。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "..."}，出錯時 {"error": "代碼"}。
-import Anthropic from '@anthropic-ai/sdk';
+import {GoogleGenAI, ApiError} from '@google/genai';
 
-const MODEL = 'claude-opus-5-5';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 const MAX_IMAGES = 4;
 const MAX_PROMPT = 60000;
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const BLOCKED = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII', 'RECITATION', 'IMAGE_SAFETY', 'IMAGE_PROHIBITED_CONTENT']);
 
 const json = (status, body) => new Response(JSON.stringify(body), {
   status, headers: {'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store'}
 });
-const configured = () => !!(process.env.ANTHROPIC_API_KEY && process.env.APP_PASSCODE);
+const configured = () => !!(process.env.GEMINI_API_KEY && process.env.APP_PASSCODE);
 
 export function GET() {
-  return json(200, {app: '睇書記錄', configured: configured(), maxImages: MAX_IMAGES});
+  return json(200, {app: '睇書記錄', configured: configured(), maxImages: MAX_IMAGES, provider: 'gemini'});
 }
 
 export async function POST(request) {
@@ -27,33 +29,36 @@ export async function POST(request) {
   if (prompt.length > MAX_PROMPT) return json(413, {error: 'prompt_too_large'});
   const images = Array.isArray(body.images) ? body.images : [];
   if (images.length > MAX_IMAGES) return json(413, {error: 'too_many_images'});
-  const content = [];
+  const parts = [];
   for (const im of images) {
     if (!im || !TYPES.has(im.type) || typeof im.data !== 'string' || !im.data) return json(400, {error: 'image_rejected'});
-    content.push({type: 'image', source: {type: 'base64', media_type: im.type, data: im.data}});
+    parts.push({inlineData: {mimeType: im.type, data: im.data}});
   }
-  content.push({type: 'text', text: prompt});
+  parts.push({text: prompt});
 
-  const client = new Anthropic();
+  const opts = {apiKey: process.env.GEMINI_API_KEY};
+  if (process.env.GEMINI_BASE_URL) opts.httpOptions = {baseUrl: process.env.GEMINI_BASE_URL};
+  const ai = new GoogleGenAI(opts);
   const enc = new TextEncoder();
   const stream = new ReadableStream({
     async start(ctl) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
       try {
-        const s = client.beta.messages.stream({
-          model: MODEL,
-          max_tokens: 16000,
-          output_config: {effort: 'medium'},
-          betas: ['server-side-fallback-2026-07-01'],
-          fallbacks: 'default',
-          messages: [{role: 'user', content}]
-        }, {signal: request.signal});
-        for await (const ev of s) {
-          if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta') send({t: ev.delta.text});
+        const res = await ai.models.generateContentStream({
+          model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+          contents: [{role: 'user', parts}],
+          config: {maxOutputTokens: 16000, abortSignal: request.signal}
+        });
+        let finish = '', blocked = '';
+        for await (const chunk of res) {
+          if (chunk.promptFeedback && chunk.promptFeedback.blockReason) blocked = chunk.promptFeedback.blockReason;
+          const c = chunk.candidates && chunk.candidates[0];
+          if (c && c.finishReason) finish = c.finishReason;
+          const t = chunk.text;
+          if (t) send({t});
         }
-        const msg = await s.finalMessage();
-        if (msg.stop_reason === 'refusal') send({error: 'refused'});
-        else send({done: true, truncated: msg.stop_reason === 'max_tokens', stop: msg.stop_reason});
+        if (blocked || BLOCKED.has(finish)) send({error: 'refused'});
+        else send({done: true, truncated: finish === 'MAX_TOKENS', stop: finish});
       } catch (e) {
         send({error: errorCode(e)});
       }
@@ -64,12 +69,13 @@ export async function POST(request) {
 }
 
 function errorCode(e) {
-  if (e instanceof Anthropic.APIUserAbortError) return 'cancelled';
-  if (e instanceof Anthropic.AuthenticationError) return 'server_key';
-  if (e instanceof Anthropic.PermissionDeniedError) return 'server_key';
-  if (e instanceof Anthropic.RateLimitError) return 'rate_limited';
-  if (e instanceof Anthropic.BadRequestError) return /image/i.test(e.message || '') ? 'image_rejected' : 'bad_request';
-  if (e instanceof Anthropic.APIConnectionError) return 'network';
-  if (e instanceof Anthropic.APIError) return 'upstream';
-  return 'upstream';
+  if (e && e.name === 'AbortError') return 'cancelled';
+  if (e instanceof ApiError) {
+    if (e.status === 400 && /api key/i.test(e.message || '')) return 'server_key';
+    if (e.status === 401 || e.status === 403) return 'server_key';
+    if (e.status === 429) return 'rate_limited';
+    if (e.status === 400) return /image|mime/i.test(e.message || '') ? 'image_rejected' : 'bad_request';
+    return 'upstream';
+  }
+  return 'network';
 }

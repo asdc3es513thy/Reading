@@ -159,8 +159,8 @@ def web_mode(b, url, img):
 
 
 def api_check():
-    """api/ask.js：用假 Anthropic 伺服器測試，不花額度。"""
-    if not (ROOT / 'node_modules' / '@anthropic-ai' / 'sdk').exists():
+    """api/ask.js：用假 Gemini 伺服器測試，不花額度。"""
+    if not (ROOT / 'node_modules' / '@google' / 'genai').exists():
         subprocess.run(['npm', 'install', '--silent'], cwd=ROOT, check=True)
     r = subprocess.run(['node', 'tests/api_check.mjs'], cwd=ROOT, capture_output=True, text=True, timeout=60)
     if r.returncode:
@@ -171,8 +171,10 @@ def api_check():
     check(o['configuredGet'] is True and o['wrongPass'] == 401, 'API：通行碼錯誤回 401')
     check(o['noPrompt'] == 400 and o['tooMany'] == 413 and o['badType'] == 400, 'API：無效提問和相片被拒')
     check(o['okStatus'] == 200 and o['lines'][-1].get('done') and ''.join(l.get('t', '') for l in o['lines']) == '書名：《測試》\n【核對】一。', 'API：串流答覆完整')
-    check(o['model'] == 'claude-opus-5-5' and o['fallbacks'] == 'default' and 'server-side-fallback' in o['beta'], 'API：模型與 fallback 設定')
-    check(o['content'][0]['type'] == 'image' and o['content'][-1] == {'type': 'text', 'text': '提問'}, 'API：相片在前、提問在後')
+    check('gemini-3.8-flash:streamGenerateContent' in o['path'] and o['key'] == 'test-key', 'API：用 Gemini 金鑰呼叫預設模型')
+    check(o['parts'][0] == {'inlineData': {'mimeType': 'image/png', 'data': 'AAAA'}} and o['parts'][-1] == {'text': '提問'}, 'API：相片在前、提問在後')
+    check(o['long'] == {'done': True, 'truncated': True, 'stop': 'MAX_TOKENS'}, 'API：答覆過長標示截短')
+    check(o['blocked'] == {'error': 'refused'}, 'API：安全封鎖回報 refused')
 
 
 if __name__ == '__main__':
