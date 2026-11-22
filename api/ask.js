@@ -23,7 +23,7 @@ export async function POST(request) {
   if (!configured()) return json(503, {error: 'not_configured'});
   let body;
   try { body = await request.json(); } catch (e) { return json(400, {error: 'bad_request'}); }
-  if (!body || body.pass !== process.env.APP_PASSCODE) return json(401, {error: 'bad_pass'});
+  if (!body || String(body.pass || '').trim() !== process.env.APP_PASSCODE.trim()) return json(401, {error: 'bad_pass'});
   const prompt = typeof body.prompt === 'string' ? body.prompt : '';
   if (!prompt) return json(400, {error: 'bad_request'});
   if (prompt.length > MAX_PROMPT) return json(413, {error: 'prompt_too_large'});

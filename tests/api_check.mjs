@@ -28,7 +28,7 @@ delete process.env.GEMINI_API_KEY; delete process.env.APP_PASSCODE;
 out.unconfiguredGet = (await api.GET().json()).configured;
 out.unconfiguredPost = (await post({pass: 'x', prompt: 'p'})).status;
 
-process.env.GEMINI_API_KEY = 'test-key'; process.env.APP_PASSCODE = 'secret';
+process.env.GEMINI_API_KEY = 'test-key'; process.env.APP_PASSCODE = ' secret\n';
 out.configuredGet = (await api.GET().json()).configured;
 out.wrongPass = (await post({pass: 'nope', prompt: 'p'})).status;
 out.noPrompt = (await post({pass: 'secret', prompt: ''})).status;
