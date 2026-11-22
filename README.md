@@ -11,14 +11,16 @@
 | | Claude 版（主力） | Vercel 網頁版 | GitHub 版（備用） |
 |---|---|---|---|
 | 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
-| 上載後答覆 | 自動（Claude） | 自動（Gemini 免費額度；輸入通行碼，經 `api/ask.js`） | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
+| 上載後答覆 | 自動（Claude） | 自動（GitHub Models 為主、Gemini 後備，都用免費額度；輸入通行碼，經 `api/ask.js`） | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
 | 記錄存放 | 你的 Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
 
 ### Vercel 網頁版設定
 
-在 Vercel 專案 → Settings → Environment Variables 加兩個變數，然後 Redeploy：
+在 Vercel 專案 → Settings → Environment Variables 加以下變數（金鑰最少一個），然後 Redeploy：
 
-- `GEMINI_API_KEY`：Google AI Studio（aistudio.google.com → Get API key）建立的金鑰，有免費額度。
+- `GITHUB_TOKEN`：主引擎 GitHub Models。GitHub → Settings → Developer settings → Fine-grained tokens 建立，權限只開 **Models: Read**。預設先 `openai/gpt-4.1`，再 `openai/o4-mini`（可用 `GITHUB_MODELS` 改）。
+
+- `GEMINI_API_KEY`：後備 Gemini，以及新書推介（要 Google 搜尋）。Google AI Studio（aistudio.google.com → Get API key）建立，有免費額度。
 - `APP_PASSCODE`：自訂通行碼。網址是公開的，沒有通行碼的人不能用你的額度。
 - 可選 `GEMINI_MODEL`：逗號分隔，按次序試；預設 `gemini-3.8-pro,gemini-3.8-flash`（Pro 不存在、無權限或額度用完就改用 Flash）。
 - 可選 `GEMINI_THINKING`：思考深度 `LOW`／`MEDIUM`／`HIGH`／`XHIGH`，預設 `XHIGH`（最深）；越高越慢、越耗額度。
@@ -56,7 +58,7 @@
 | `METHOD.md` | 方法全文（由 `build.py` 從頁面產生，不要手改） |
 | `src/reading-log.src.html` | 唯一原始檔 |
 | `src/bg.jpg`、`src/VERSION` | 背景相片、發佈日期 |
-| `api/ask.js`、`package.json`、`vercel.json` | Vercel 網頁版的答覆函數（Gemini） |
+| `api/ask.js`、`package.json`、`vercel.json` | Vercel 網頁版的答覆函數（GitHub Models 為主、Gemini 後備） |
 | `build.py` | 產生 `index.html`、`METHOD.md` 和 Claude 版（`dist/`） |
 | `tests/` | 實際開瀏覽器的測試：`test_local.py` 測 GitHub 版、Vercel 網頁版和 `api/ask.js`，`test_claude.py` 測 Claude 版 |
 | `CLAUDE.md` | 給 Claude 的更新守則 |

@@ -9,21 +9,24 @@
 | | Claude 版 | Vercel 網頁版 | GitHub 版 |
 |---|---|---|---|
 | 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
-| 答覆 | Claude 自動答覆 | Gemini 自動答覆（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
+| 答覆 | Claude 自動答覆 | GitHub Models 自動答覆，Gemini 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
 | 新書推介 | 沒有 | 有（每星期自動） | 沒有 |
 | 記錄存放 | Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
 
 - 三個版本的記錄**互不相通**，只能用「匯出／匯入備份」搬（見第七節）。
 - 頁底的版本號三邊相同，即代表程式已同步。
-- 答覆深度：Claude 版最深入；Vercel 版已設定為 Gemini Pro 加最高思考深度，Pro 用不到時自動轉 Flash。
+- 答覆深度：Claude 版最深入。Vercel 版先用 GitHub Models（gpt-4.1，再 o4-mini）；出錯、額度用完或輸入太長，自動改用 Gemini（先 Pro 後 Flash，最高思考深度）。
 
 ---
 
 ## 二、第一次設定（只做一次，Vercel 版用）
 
-1. **取得 Gemini 免費金鑰**：aistudio.google.com → Get API key → Create API key → 複製。金鑰不要貼在任何對話，也不要放上 GitHub。
+1. **取得金鑰**（金鑰不要貼在任何對話，也不要放上 GitHub；外洩了就即刻刪除、重開）：
+   - 主引擎 GitHub Models：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate，權限只開 **Models: Read**。
+   - 後備 Gemini（新書推介也要用）：aistudio.google.com → Get API key → Create API key。
 2. **Vercel 加環境變數**：專案 → Settings → Environment Variables（手機版在「☰」選單內），類型揀 Secret：
-   - `GEMINI_API_KEY`：剛才的金鑰
+   - `GITHUB_TOKEN`：GitHub 金鑰
+   - `GEMINI_API_KEY`：Gemini 金鑰
    - `APP_PASSCODE`：自訂通行碼（大細楷有分，記住它）
    - 環境揀 **Production** → Save
 3. **重新部署**：Deployments → 最新一個 → ⋯ → Redeploy，等到 Ready。
@@ -34,7 +37,8 @@
 
 | 變數 | 作用 | 預設 |
 |---|---|---|
-| `GEMINI_MODEL` | 模型次序，逗號分隔 | `gemini-3.8-pro,gemini-3.8-flash` |
+| `GITHUB_MODELS` | GitHub 模型次序，逗號分隔 | `openai/gpt-4.1,openai/o4-mini` |
+| `GEMINI_MODEL` | Gemini 模型次序，逗號分隔 | `gemini-3.8-pro,gemini-3.8-flash` |
 | `GEMINI_THINKING` | 思考深度 `LOW`／`MEDIUM`／`HIGH`／`XHIGH`／`OFF` | `XHIGH` |
 
 ---
@@ -122,9 +126,10 @@
 | Vercel 版只見「複製提問文字並儲存」 | `/api/ask` 顯示 `"configured":false` | 檢查兩個環境變數，然後 Redeploy |
 | 「請先在上面輸入通行碼」（`no_pass`） | 通行碼欄空白 | 輸入通行碼 |
 | 「通行碼不正確」（`bad_pass`） | 與 `APP_PASSCODE` 不符 | 清空重打；忘記了就在 Vercel 改新值再 Redeploy |
-| 「網站未設定好 Gemini 金鑰」（`not_configured`／`server_key`） | 金鑰缺漏、錯誤或被停用 | 在 AI Studio 開新金鑰，更新 `GEMINI_API_KEY`，Redeploy |
+| 「網站的 AI 金鑰未設定好或已失效」（`not_configured`／`server_key`） | 金鑰缺漏、錯誤、被刪除或權限不足 | 重開金鑰（GitHub 要有 Models: Read），更新 Vercel 變數，Redeploy |
 | 「用量已到上限」（`rate_limited`） | 免費額度用完 | 稍後再試，或先按「只儲存」 |
 | 「拒絕處理這個內容」（`refused`） | 安全過濾 | 換相片或修改文字 |
+| 答覆在中途停止 | GitHub 免費版每次輸出有上限 | 再試一次；經常發生就在 Vercel 刪除 `GITHUB_TOKEN` 並 Redeploy，改回 Gemini 為主 |
 | 「相片無法讀取」（`image_rejected`） | 格式問題 | 換 JPEG 或 PNG |
 | 「連線中斷」 | 網絡或伺服器問題 | 再試一次 |
 | Vercel 介面出現 security checkpoint 錯誤 | Vercel 本身的防護 | Cancel，重新整理，再到 Deployments 重新部署 |

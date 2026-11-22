@@ -1,4 +1,4 @@
-// 測試 api/ask.js：用本機假 Gemini 伺服器（SSE），不會真正呼叫 Gemini、不花額度。
+// 測試 api/ask.js：用本機假 GitHub Models 和假 Gemini 伺服器（SSE），不會真正呼叫任何 AI、不花額度。
 // 由 tests/test_local.py 執行；輸出 JSON 結果。
 import http from 'node:http';
 
@@ -9,7 +9,17 @@ const fake = http.createServer((req, res) => {
   let body = '';
   req.on('data', c => { body += c; });
   req.on('end', () => {
-    seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || ''});
+    seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
+    if (req.url.startsWith('/inference/')) {
+      if (mode === 'gh429') { res.writeHead(429, {'content-type': 'application/json'}); return res.end('{"error":{"code":"RateLimitReached"}}'); }
+      res.writeHead(200, {'content-type': 'text/event-stream'});
+      const d = (content, finish_reason = null) => `data: ${JSON.stringify({choices: [{index: 0, delta: content ? {content} : {}, finish_reason}]})}\n\n`;
+      res.write(d('書名：《GH》\n'));
+      res.write(d('【核對】甲。'));
+      res.write(d('', mode === 'ghlen' ? 'length' : mode === 'ghfilter' ? 'content_filter' : 'stop'));
+      res.write('data: [DONE]\n\n');
+      return res.end();
+    }
     if (mode === 'nopro' && req.url.includes('gemini-3.8-pro')) {
       res.writeHead(404, {'content-type': 'application/json'});
       return res.end(JSON.stringify({error: {code: 404, message: 'models/gemini-3.8-pro is not found', status: 'NOT_FOUND'}}));
@@ -71,6 +81,29 @@ out.searchTools = seen[b2].body.tools;
 out.plainTools = seen[0].body.tools || null;
 mode = 'blocked';
 out.blocked = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
+
+// ---- GitHub Models 做主引擎，Gemini 做後備 ----
+const last = async b => (await (await post(b)).text()).trim().split('\n').map(l => JSON.parse(l));
+process.env.GITHUB_TOKEN = 'gh-test'; process.env.GITHUB_MODELS_URL = `http://127.0.0.1:${fake.address().port}/inference/chat/completions`;
+out.ghGet = await api.GET().json();
+mode = 'gh';
+let b3 = seen.length;
+out.gh = await last({pass: 'secret', prompt: '提問', images: [{type: 'image/png', data: 'AAAA'}]});
+out.ghReq = seen.slice(b3).map(x => ({path: x.path, auth: x.auth, model: x.body.model, stream: x.body.stream, content: x.body.messages && x.body.messages[0].content}));
+mode = 'gh429';
+b3 = seen.length;
+out.ghFallback = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.ghFallbackPaths = seen.slice(b3).map(x => x.path.split('?')[0]);
+mode = 'ghlen';
+out.ghLen = (await last({pass: 'secret', prompt: 'p'})).pop();
+mode = 'ghfilter';
+out.ghFilter = (await last({pass: 'secret', prompt: 'p'})).pop();
+mode = 'search';
+b3 = seen.length;
+out.searchBoth = (await last({pass: 'secret', prompt: 'p', search: true})).pop();
+out.searchBothFirst = seen[b3].path.split('?')[0];
+delete process.env.GEMINI_API_KEY;
+out.ghOnlyGet = (await api.GET().json()).providers;
 
 fake.close();
 console.log(JSON.stringify(out));

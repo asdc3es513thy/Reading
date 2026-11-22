@@ -8,7 +8,7 @@
 - `src/bg.jpg`：宇宙背景相片。`src/VERSION`：發佈日期，每次發佈改為當日。
 - `build.py`：產生 `index.html`（GitHub Pages 版，commit）、`dist/reading-log.html`（Claude 版，不 commit）、`METHOD.md`（方法全文，commit）。
 - 同一份程式碼三種運行方式：有 `window.claude` 就用 Claude 的 `db`、`sample`、`assets`、`downloads`；沒有就用瀏覽器 IndexedDB（資料庫名 `reading-log`），答覆改為複製提問文字、貼上答覆。
-- Vercel 網頁版：同網站有 `api/ask`（`api/ask.js`，用 Google Gemini 免費額度；環境變數 `GEMINI_API_KEY`、`APP_PASSCODE`，可選 `GEMINI_MODEL`（預設先 Pro 後 Flash）、`GEMINI_THINKING`（預設 `XHIGH`））就經它取得答覆，記錄仍用 IndexedDB；GitHub Pages 沒有這個路徑，維持複製模式。網頁版的「新書推介」（`search: true` → Google 搜尋）每星期自動更新一次，結果存在 localStorage `reading-log:recs`，不入資料庫。
+- Vercel 網頁版：同網站有 `api/ask`（`api/ask.js`：GitHub Models 為主（`GITHUB_TOKEN`，可選 `GITHUB_MODELS`），Google Gemini 後備（`GEMINI_API_KEY`）；另需 `APP_PASSCODE`；可選 `GEMINI_MODEL`（預設先 Pro 後 Flash）、`GEMINI_THINKING`（預設 `XHIGH`））就經它取得答覆，記錄仍用 IndexedDB；GitHub Pages 沒有這個路徑，維持複製模式。網頁版的「新書推介」（`search: true` → 先用 Gemini 的 Google 搜尋）每星期自動更新一次，結果存在 localStorage `reading-log:recs`，不入資料庫。
 
 ## 更新流程
 
