@@ -122,9 +122,10 @@ async function openGithub(images, prompt, signal) {
 
 async function* githubEvents(r) {
   const rd = r.body.getReader(), dec = new TextDecoder();
-  let buf = '', finish = '';
+  let buf = '', finish = '', raw = '', got = false;
   const handle = function* (line) {
     line = line.trim();
+    if (raw.length < 2000) raw += line + '\n';
     if (!line.startsWith('data:')) return;
     const data = line.slice(5).trim();
     if (!data || data === '[DONE]') return;
@@ -133,7 +134,7 @@ async function* githubEvents(r) {
     if (j.error) throw new ProviderError(j.error.code === 'content_filter' ? 'refused' : 'upstream', 0, short(j.error.message || j.error.code));
     const c = j.choices && j.choices[0];
     if (!c) return;
-    if (c.delta && typeof c.delta.content === 'string' && c.delta.content) yield {t: c.delta.content};
+    if (c.delta && typeof c.delta.content === 'string' && c.delta.content) { got = true; yield {t: c.delta.content}; }
     if (c.finish_reason) finish = c.finish_reason;
   };
   for (;;) {
@@ -144,6 +145,15 @@ async function* githubEvents(r) {
     while ((k = buf.indexOf('\n')) >= 0) { yield* handle(buf.slice(0, k)); buf = buf.slice(k + 1); }
   }
   yield* handle(buf);
+  if (!got) {
+    // 不是 SSE：可能是一次過的 JSON（非串流答覆或錯誤）
+    let j = null;
+    try { j = JSON.parse(raw); } catch (e) {}
+    const c = j && j.choices && j.choices[0];
+    const text = c && c.message && typeof c.message.content === 'string' ? c.message.content : '';
+    if (text) { yield {t: text}; finish = c.finish_reason || finish; }
+    else if (finish !== 'content_filter') throw new ProviderError('upstream', 0, 'github 沒有回覆內容 ' + innerMessage(raw));
+  }
   yield {end: true, truncated: finish === 'length', refused: finish === 'content_filter', stop: finish};
 }
 
@@ -178,7 +188,7 @@ async function openGemini(images, prompt, signal, search) {
 }
 
 async function* geminiEvents(res) {
-  let finish = '', blocked = '';
+  let finish = '', blocked = '', got = false;
   const sources = new Map();
   for await (const chunk of res) {
     if (chunk.promptFeedback && chunk.promptFeedback.blockReason) blocked = chunk.promptFeedback.blockReason;
@@ -188,8 +198,9 @@ async function* geminiEvents(res) {
       if (g.web && g.web.uri && !sources.has(g.web.uri) && sources.size < 20) sources.set(g.web.uri, {title: g.web.title || g.web.uri, uri: g.web.uri});
     }
     const t = chunk.text;
-    if (t) yield {t};
+    if (t) { got = true; yield {t}; }
   }
+  if (!got && !blocked && !BLOCKED.has(finish)) throw new ProviderError('upstream', 0, 'gemini 沒有回覆內容 ' + finish);
   yield {end: true, truncated: finish === 'MAX_TOKENS', refused: !!blocked || BLOCKED.has(finish), stop: finish, sources: [...sources.values()]};
 }
 

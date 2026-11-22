@@ -111,6 +111,9 @@ def main():
 RECS = '書名：新書甲（New Book A）\n作者／出版年月／出版社：某作者／2026 年 10 月／某出版社\n類型：論點書'
 
 
+STATE = {}
+
+
 def web_mode(b, url, img):
     """Vercel 網頁版：/api/ask 存在時，按「核對我的重述」即經本網站取得答覆。"""
     calls = []
@@ -123,6 +126,8 @@ def web_mode(b, url, img):
         calls.append(body)
         if body.get('pass') != 'secret':
             return route.fulfill(status=401, content_type='application/json', body='{"error":"bad_pass"}')
+        if 'EMPTY' in body.get('prompt', '') or STATE.get('empty'):
+            return route.fulfill(status=200, content_type='application/x-ndjson', body='{"done":true,"truncated":false,"provider":"github"}\n')
         if body.get('search'):
             done = {'done': True, 'truncated': False, 'sources': [{'title': '出版社新書頁', 'uri': 'https://example.com/new-book'}, {'title': '壞連結', 'uri': 'javascript:alert(1)'}]}
             lines = [json.dumps({'t': RECS}, ensure_ascii=False), json.dumps(done, ensure_ascii=False)]
@@ -153,6 +158,11 @@ def web_mode(b, url, img):
     check(page.evaluate("document.querySelectorAll('#records article').length") == 0, '通行碼錯誤時沒有儲存')
 
     page.fill('#pass', 'secret')
+    STATE['empty'] = True
+    page.click('#askBtn')
+    page.wait_for_function("document.getElementById('say').textContent.includes('沒有回覆')")
+    check(page.evaluate("document.querySelectorAll('#records article').length") == 0, '空答覆不會儲存，並顯示原因')
+    STATE['empty'] = False
     page.click('#askBtn')
     page.wait_for_function("document.getElementById('records').textContent.includes('測試之書')")
     last = calls[-1]
@@ -213,6 +223,8 @@ def api_check():
     check(o['ghLen'].get('truncated') is True and o['ghFilter'].get('error') == 'refused', 'API：GitHub 截短和內容過濾')
     check(o['pro503'].get('model') == 'gemini-3.8-flash', 'API：Gemini Pro 太忙（503）時改用 Flash')
     check(o['ghStreamErr'].get('provider') == 'gemini', 'API：GitHub 未出文字就斷線時改用 Gemini')
+    check(o['ghEmpty'].get('provider') == 'gemini', 'API：GitHub 沒有文字時改用 Gemini')
+    check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'github', 'API：GitHub 一次過 JSON 答覆也讀得到')
     check(o['allDown'].get('error') == 'upstream' and 'gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時回報引擎和狀態碼')
     check(o['quota'].get('error') == 'rate_limited' and o['quota'].get('detail') == 'gemini 429 You exceeded your current quota, please check your plan.', 'API：錯誤原因只顯示最內層訊息')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')

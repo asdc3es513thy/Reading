@@ -701,6 +701,7 @@ function errCopy(code){
     case 'image_rejected': case 'images_unavailable': return '相片無法讀取，請換一張 JPEG 或 PNG。';
     case 'session_expired': return '登入已過期，請重新登入後再試。';
     case 'no_pass': return '請先在上面輸入通行碼。';
+    case 'empty': return 'AI 沒有回覆任何內容，未儲存，請再試一次。';
     case 'bad_pass': return '通行碼不正確，請檢查後再試。';
     case 'not_configured': case 'server_key': return '網站的 AI 金鑰未設定好或已失效，請在 Vercel 檢查 GITHUB_TOKEN、GEMINI_API_KEY 和 APP_PASSCODE。';
     case 'too_many_images': return '相片太多，一次最多 ' + S.maxImg + ' 張。';
@@ -1363,6 +1364,7 @@ function remoteSample(max){
       throw {code: e && e.name === 'AbortError' ? 'cancelled' : 'network', text};
     }
     if (!end) throw {code: 'network', text};
+    if (!text.trim()) throw {code: 'empty', detail: end.provider || ''};
     return {text, truncated: !!end.truncated, sources: Array.isArray(end.sources) ? end.sources : []};
   };
   ask.limits = async () => ({images: {maxCount: max}});

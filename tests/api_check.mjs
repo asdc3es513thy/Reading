@@ -12,6 +12,15 @@ const fake = http.createServer((req, res) => {
     seen.push({path: req.url, body: JSON.parse(body || '{}'), key: req.headers['x-goog-api-key'] || '', auth: req.headers.authorization || ''});
     if (req.url.startsWith('/inference/')) {
       if (mode === 'alldown') { res.writeHead(500, {'content-type': 'application/json'}); return res.end('{"error":{"message":"internal error"}}'); }
+      if (mode === 'ghempty') {
+        res.writeHead(200, {'content-type': 'text/event-stream'});
+        res.write(`data: ${JSON.stringify({choices: [{index: 0, delta: {}, finish_reason: 'stop'}]})}\n\ndata: [DONE]\n\n`);
+        return res.end();
+      }
+      if (mode === 'ghjson') {
+        res.writeHead(200, {'content-type': 'application/json'});
+        return res.end(JSON.stringify({choices: [{index: 0, message: {role: 'assistant', content: '書名：《JSON》'}, finish_reason: 'stop'}]}));
+      }
       if (mode === 'ghstreamerr') {
         res.writeHead(200, {'content-type': 'text/event-stream'});
         res.write(`data: ${JSON.stringify({error: {code: 'server_error', message: 'stream failed'}})}\n\n`);
@@ -120,6 +129,10 @@ out.searchBoth = (await last({pass: 'secret', prompt: 'p', search: true})).pop()
 out.searchBothFirst = seen[b3].path.split('?')[0];
 mode = 'ghstreamerr';
 out.ghStreamErr = (await last({pass: 'secret', prompt: 'p'})).pop();
+mode = 'ghempty';
+out.ghEmpty = (await last({pass: 'secret', prompt: 'p'})).pop();
+mode = 'ghjson';
+out.ghJson = await last({pass: 'secret', prompt: 'p'});
 mode = 'alldown';
 out.allDown = (await last({pass: 'secret', prompt: 'p'})).pop();
 delete process.env.GITHUB_TOKEN;
