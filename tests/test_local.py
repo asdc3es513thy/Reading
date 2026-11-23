@@ -121,13 +121,13 @@ def web_mode(b, url, img):
     def handle(route):
         r = route.request
         if r.method == 'GET':
-            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'app': '睇書記錄', 'configured': True, 'maxImages': 4, 'providers': ['github', 'gemini']}))
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'app': '睇書記錄', 'configured': True, 'maxImages': 4, 'providers': ['mistral', 'gemini']}))
         body = json.loads(r.post_data)
         calls.append(body)
         if body.get('pass') != 'secret':
             return route.fulfill(status=401, content_type='application/json', body='{"error":"bad_pass"}')
         if 'EMPTY' in body.get('prompt', '') or STATE.get('empty'):
-            return route.fulfill(status=200, content_type='application/x-ndjson', body='{"done":true,"truncated":false,"provider":"github"}\n')
+            return route.fulfill(status=200, content_type='application/x-ndjson', body='{"done":true,"truncated":false,"provider":"mistral"}\n')
         if body.get('search'):
             done = {'done': True, 'truncated': False, 'sources': [{'title': '出版社新書頁', 'uri': 'https://example.com/new-book'}, {'title': '壞連結', 'uri': 'javascript:alert(1)'}]}
             lines = [json.dumps({'t': RECS}, ensure_ascii=False), json.dumps(done, ensure_ascii=False)]
@@ -143,7 +143,7 @@ def web_mode(b, url, img):
     page.goto(url + 'index.html')
     page.wait_for_function("document.getElementById('whereAmI').textContent.includes('網頁版')")
     check(page.is_visible('#recsCard') and not any(c.get('search') for c in calls), '網頁版顯示新書推介；未有通行碼不會自動搜尋')
-    check('GitHub Models，後備 Gemini' in page.inner_text('#whereAmI'), '頁底顯示主引擎和後備')
+    check('Mistral，後備 Gemini' in page.inner_text('#whereAmI'), '頁底顯示主引擎和後備')
     check(page.is_visible('#askBtn') and page.is_hidden('#copyBtn') and page.is_visible('#pass'), '網頁版：顯示「核對我的重述」和通行碼欄')
 
     page.set_input_files('#file', img)
@@ -217,30 +217,28 @@ def api_check():
     check(o['nothink'].get('done') is True, 'API：模型不接受思考深度時自動改用預設再試')
     check(o['searchTools'] == [{'googleSearch': {}}] and o['plainTools'] is None, 'API：只有推介請求才開 Google 搜尋')
     check(o['search'].get('sources') == [{'title': 'A', 'uri': 'https://example.com/a'}], 'API：搜尋來源去重後回傳')
-    check(o['ghGet']['providers'] == ['github', 'gemini'] and o['ghOnlyGet'] == ['github'], 'API：列出可用引擎，GitHub 優先')
+    check(o['ghGet']['providers'] == ['mistral', 'gemini'] and o['ghOnlyGet'] == ['mistral'], 'API：列出可用引擎，Mistral 先於 Gemini')
     g = o['ghReq'][0] if o['ghReq'] else {}
-    check(len(o['ghReq']) == 1 and g['auth'] == 'Bearer gh-test' and g['model'] == 'openai/gpt-4.1' and g['stream'] is True, 'API：GitHub Models 做主引擎（gpt-4.1、串流）')
-    check(g.get('content') == [{'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,AAAA'}}, {'type': 'text', 'text': '提問'}], 'API：GitHub 請求相片在前、提問在後')
-    check(''.join(l.get('t', '') for l in o['gh']) == '書名：《GH》\n【核對】甲。' and o['gh'][-1].get('provider') == 'github', 'API：GitHub 串流答覆完整')
-    check(o['ghFallback'].get('provider') == 'gemini' and o['ghFallbackPaths'][:2] == ['/inference/chat/completions'] * 2 and 'gemini' in o['ghFallbackPaths'][2], 'API：GitHub 兩個型號都用不到時改用 Gemini')
-    check(o['ghLen'].get('truncated') is True and o['ghFilter'].get('error') == 'refused', 'API：GitHub 截短和內容過濾')
+    check(len(o['ghReq']) == 1 and g['auth'] == 'Bearer mi-test' and g['model'] == 'mistral-large-4-0' and g['stream'] is True and g['effort'] == 'high', 'API：Mistral 請求（Large 4、串流、最高推理深度）')
+    check(g.get('content') == [{'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,AAAA'}}, {'type': 'text', 'text': '提問'}], 'API：Mistral 請求相片在前、提問在後')
+    check(''.join(l.get('t', '') for l in o['gh']) == '書名：《GH》\n【核對】甲。' and o['gh'][-1].get('provider') == 'mistral', 'API：Mistral 思考區塊不混入答覆，答覆完整')
+    check(o['ghFallback'].get('provider') == 'gemini' and o['ghFallbackPaths'][:2] == ['/mistral/chat/completions mistral-large-4-0', '/mistral/chat/completions mistral-medium-3-5'] and 'gemini' in o['ghFallbackPaths'][2], 'API：Mistral Large 4、Medium 3.5 都用不到時改用 Gemini')
+    check(o['ghLen'].get('truncated') is True and o['ghFilter'].get('error') == 'refused', 'API：Mistral 截短和內容過濾')
     check(o['pro503'].get('model') == 'gemini-3.8-flash', 'API：Gemini Pro 太忙（503）時改用 Flash')
-    check(o['ghStreamErr'].get('provider') == 'gemini', 'API：GitHub 未出文字就斷線時改用 Gemini')
-    check(o['ghRedirect'].get('provider') == 'github' and o['ghRedirectReq'][:2] == ['POST /inference/chat/completions', 'POST /inference2/chat/completions'], 'API：GitHub 轉址後仍用 POST 送出提問')
-    check(o['ghOk'].get('provider') == 'github' and o['ghOkReq'][0].startswith('/inference/chat/completions openai/gpt-4.1') and o['ghOkReq'][-1].startswith('/azure/chat/completions gpt-4.1') and o['ghOkReq'][0].endswith('reading-log'), 'API：GitHub 回純文字「OK」時改試舊入口（型號名無前綴）')
-    check(o['ghOkStream'].get('provider') == 'github' and o['ghOkStreamReq'] == ['true', 'false'], 'API：串流只回「OK」時改用非串流再試')
-    check(o['orGet'] == ['openrouter', 'github', 'gemini'], 'API：OpenRouter 排第一，然後 GitHub、Gemini')
+    check(o['ghStreamErr'].get('provider') == 'gemini', 'API：Mistral 未出文字就斷線時改用 Gemini')
+    check(o['noReason'].get('provider') == 'mistral' and o['noReasonReq'] == ['high', 'undefined'], 'API：模型不接受推理深度時用預設再試')
+    check(o['orGet'] == ['openrouter', 'mistral', 'gemini'], 'API：OpenRouter 排第一，然後 Mistral、Gemini')
     r0 = o['orReq'][0] if o['orReq'] else {}
-    check(len(o['orReq']) == 1 and r0.get('auth') == 'Bearer or-test' and r0.get('title') == 'Reading Log' and r0.get('model') == 'openrouter/free' and r0.get('content', [{}])[0].get('type') == 'image_url', 'API：OpenRouter 請求（金鑰、預設免費模型、相片）')
+    check(len(o['orReq']) == 1 and r0.get('auth') == 'Bearer or-test' and r0.get('title') == 'Reading Log' and r0.get('model') == 'nvidia/nemotron-3.5-super-vl:free' and r0.get('reasoning') == {'effort': 'high'} and r0.get('content', [{}])[0].get('type') == 'image_url', 'API：OpenRouter 請求（Nemotron 3.5 Super VL、最高推理深度、相片）')
     check(''.join(l.get('t', '') for l in o['or']) == '書名：《OR》' and o['or'][-1].get('provider') == 'openrouter', 'API：OpenRouter 串流答覆完整（略過 PROCESSING 註解行）')
-    check(o['or429'].get('provider') == 'github' and o['or429Models'][:2] == ['openrouter/free', 'google/gemma-4-31b-it:free'], 'API：OpenRouter 兩個免費模型都用不到時改用 GitHub')
+    check(o['or429'].get('provider') == 'mistral' and o['or429Models'][:4] == ['nvidia/nemotron-3.5-super-vl:free', 'google/gemma-4-31b-it:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'mistral-large-4-0'], 'API：OpenRouter 三個免費模型都用不到時改用 Mistral')
+    check(o['filtered'] == ['google/gemma-4-31b-it:free', 'mistral-large-4-0'], 'API：中國模型（含 openrouter/free 隨機路由）一律略過')
     check(o['orSearchFirst'].startswith('/v1/models/gemini'), 'API：有 OpenRouter 時新書推介仍先用 Gemini 搜尋')
-    check(o['ghEmpty'].get('provider') == 'gemini', 'API：GitHub 沒有文字時改用 Gemini')
-    check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'github', 'API：GitHub 一次過 JSON 答覆也讀得到')
-    check(o['allDown'].get('error') == 'upstream' and o['allDown'].get('detail', '').startswith('github 500') and '；gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時列出每個引擎的原因')
+    check(o['ghEmpty'].get('provider') == 'gemini', 'API：Mistral 沒有文字時改用 Gemini')
+    check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'mistral', 'API：一次過 JSON 答覆也讀得到')
+    check(o['allDown'].get('error') == 'upstream' and o['allDown'].get('detail', '').startswith('mistral') and '；gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時列出每個引擎的原因')
     check(o['quota'].get('error') == 'rate_limited' and o['quota'].get('detail') == 'gemini 429 You exceeded your current quota, please check your plan.', 'API：錯誤原因只顯示最內層訊息')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')
-
 
 if __name__ == '__main__':
     main()

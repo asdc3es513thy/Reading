@@ -1,4 +1,4 @@
-// 測試 api/ask.js：用本機假 GitHub Models 和假 Gemini 伺服器（SSE），不會真正呼叫任何 AI、不花額度。
+// 測試 api/ask.js：用本機假 OpenRouter、假 Mistral 和假 Gemini 伺服器（SSE），不會真正呼叫任何 AI、不花額度。
 // 由 tests/test_local.py 執行；輸出 JSON 結果。
 import http from 'node:http';
 
@@ -18,19 +18,8 @@ const fake = http.createServer((req, res) => {
       res.write(`data: ${JSON.stringify({choices: [{index: 0, delta: {}, finish_reason: 'stop'}]})}\n\ndata: [DONE]\n\n`);
       return res.end();
     }
-    if (req.url.startsWith('/inference/') && mode === 'ghredirect') {
-      res.writeHead(302, {location: '/inference2/chat/completions'});
-      return res.end();
-    }
-    if (req.url.startsWith('/inference2/') && req.method !== 'POST') { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
-    if (req.url.startsWith('/inference/') && mode === 'ghok') { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
-    if (req.url.startsWith('/inference/') && mode === 'ghokstream' && JSON.parse(body).stream) { res.writeHead(200, {'content-type': 'text/plain'}); return res.end('OK'); }
-    if (req.url.startsWith('/azure/')) {
-      res.writeHead(200, {'content-type': 'text/event-stream'});
-      res.write(`data: ${JSON.stringify({choices: [{index: 0, delta: {content: '書名：《Azure》'}, finish_reason: 'stop'}]})}\n\ndata: [DONE]\n\n`);
-      return res.end();
-    }
-    if (req.url.startsWith('/inference/') || req.url.startsWith('/inference2/')) {
+    if (req.url.startsWith('/mistral/')) {
+      if (mode === 'noreason' && JSON.parse(body).reasoning_effort) { res.writeHead(400, {'content-type': 'application/json'}); return res.end('{"message":"reasoning_effort is not supported for this model"}'); }
       if (mode === 'alldown') { res.writeHead(500, {'content-type': 'application/json'}); return res.end('{"error":{"message":"internal error"}}'); }
       if (mode === 'ghempty') {
         res.writeHead(200, {'content-type': 'text/event-stream'});
@@ -49,13 +38,15 @@ const fake = http.createServer((req, res) => {
       if (mode === 'gh429') { res.writeHead(429, {'content-type': 'application/json'}); return res.end('{"error":{"code":"RateLimitReached"}}'); }
       res.writeHead(200, {'content-type': 'text/event-stream'});
       const d = (content, finish_reason = null) => `data: ${JSON.stringify({choices: [{index: 0, delta: content ? {content} : {}, finish_reason}]})}\n\n`;
-      res.write(d('書名：《GH》\n'));
+      // 推理模式：先送 thinking 區塊，再在同一陣列轉到 text 區塊，之後是純字串
+      res.write(d([{type: 'thinking', thinking: [{type: 'text', text: '內部思考'}]}]));
+      res.write(d([{type: 'thinking', thinking: [{type: 'text', text: '。'}]}, {type: 'text', text: '書名：《GH》\n'}]));
       res.write(d('【核對】甲。'));
       res.write(d('', mode === 'ghlen' ? 'length' : mode === 'ghfilter' ? 'content_filter' : 'stop'));
       res.write('data: [DONE]\n\n');
       return res.end();
     }
-    if (mode === 'quota' && !req.url.startsWith('/inference/')) {
+    if (mode === 'quota' && !req.url.startsWith('/mistral/')) {
       res.writeHead(429, {'content-type': 'application/json'});
       return res.end(JSON.stringify({error: {code: 429, message: 'You exceeded your current quota, please check your plan.', status: 'RESOURCE_EXHAUSTED'}}));
     }
@@ -127,18 +118,18 @@ out.plainTools = seen[0].body.tools || null;
 mode = 'blocked';
 out.blocked = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 
-// ---- GitHub Models 做主引擎，Gemini 做後備 ----
+// ---- Mistral 做主引擎，Gemini 做後備 ----
 const last = async b => (await (await post(b)).text()).trim().split('\n').map(l => JSON.parse(l));
-process.env.GITHUB_TOKEN = 'gh-test'; process.env.GITHUB_MODELS_URL = `http://127.0.0.1:${fake.address().port}/inference/chat/completions`;
+process.env.MISTRAL_API_KEY = 'mi-test'; process.env.MISTRAL_URL = `http://127.0.0.1:${fake.address().port}/mistral/chat/completions`;
 out.ghGet = await api.GET().json();
 mode = 'gh';
 let b3 = seen.length;
 out.gh = await last({pass: 'secret', prompt: '提問', images: [{type: 'image/png', data: 'AAAA'}]});
-out.ghReq = seen.slice(b3).map(x => ({path: x.path, auth: x.auth, model: x.body.model, stream: x.body.stream, content: x.body.messages && x.body.messages[0].content}));
+out.ghReq = seen.slice(b3).map(x => ({path: x.path, auth: x.auth, model: x.body.model, stream: x.body.stream, effort: x.body.reasoning_effort, content: x.body.messages && x.body.messages[0].content}));
 mode = 'gh429';
 b3 = seen.length;
 out.ghFallback = (await last({pass: 'secret', prompt: 'p'})).pop();
-out.ghFallbackPaths = seen.slice(b3).map(x => x.path.split('?')[0]);
+out.ghFallbackPaths = seen.slice(b3).map(x => x.path.split('?')[0] + (x.body.model ? ' ' + x.body.model : ''));
 mode = 'ghlen';
 out.ghLen = (await last({pass: 'secret', prompt: 'p'})).pop();
 mode = 'ghfilter';
@@ -149,41 +140,38 @@ out.searchBoth = (await last({pass: 'secret', prompt: 'p', search: true})).pop()
 out.searchBothFirst = seen[b3].path.split('?')[0];
 mode = 'ghstreamerr';
 out.ghStreamErr = (await last({pass: 'secret', prompt: 'p'})).pop();
-mode = 'ghredirect';
+mode = 'noreason';
 let b4 = seen.length;
-out.ghRedirect = (await last({pass: 'secret', prompt: 'p'})).pop();
-out.ghRedirectReq = seen.slice(b4).map(x => x.method + ' ' + x.path.split('?')[0]);
-mode = 'ghok';
-process.env.GITHUB_MODELS_URL = `http://127.0.0.1:${fake.address().port}/inference/chat/completions,http://127.0.0.1:${fake.address().port}/azure/chat/completions`;
-b4 = seen.length;
-out.ghOk = (await last({pass: 'secret', prompt: 'p'})).pop();
-out.ghOkReq = seen.slice(b4).map(x => x.path.split('?')[0] + ' ' + x.body.model + ' ' + (x.ua || ''));
-process.env.GITHUB_MODELS_URL = `http://127.0.0.1:${fake.address().port}/inference/chat/completions`;
-mode = 'ghokstream';
-b4 = seen.length;
-out.ghOkStream = (await last({pass: 'secret', prompt: 'p'})).pop();
-out.ghOkStreamReq = seen.slice(b4).map(x => String(x.body.stream));
+out.noReason = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.noReasonReq = seen.slice(b4).map(x => String(x.body.reasoning_effort));
 mode = 'ghempty';
 out.ghEmpty = (await last({pass: 'secret', prompt: 'p'})).pop();
 mode = 'ghjson';
 out.ghJson = await last({pass: 'secret', prompt: 'p'});
 mode = 'alldown';
 out.allDown = (await last({pass: 'secret', prompt: 'p'})).pop();
-delete process.env.GITHUB_TOKEN;
+delete process.env.MISTRAL_API_KEY;
 mode = 'quota';
 out.quota = (await last({pass: 'secret', prompt: 'p'})).pop();
-process.env.GITHUB_TOKEN = 'gh-test';
+process.env.MISTRAL_API_KEY = 'mi-test';
 // ---- OpenRouter 做主引擎 ----
 process.env.OPENROUTER_API_KEY = 'or-test'; process.env.OPENROUTER_URL = `http://127.0.0.1:${fake.address().port}/openrouter/chat/completions`;
 out.orGet = (await api.GET().json()).providers;
 mode = 'or';
 b4 = seen.length;
 out.or = await last({pass: 'secret', prompt: '提問', images: [{type: 'image/png', data: 'AAAA'}]});
-out.orReq = seen.slice(b4).map(x => ({path: x.path, auth: x.auth, title: x.title, model: x.body.model, content: x.body.messages && x.body.messages[0].content}));
+out.orReq = seen.slice(b4).map(x => ({path: x.path, auth: x.auth, title: x.title, model: x.body.model, reasoning: x.body.reasoning, content: x.body.messages && x.body.messages[0].content}));
 mode = 'or429';
 b4 = seen.length;
 out.or429 = (await last({pass: 'secret', prompt: 'p'})).pop();
 out.or429Models = seen.slice(b4).map(x => x.body.model || x.path.split('?')[0]);
+// 環境變數列了中國模型也會略過
+process.env.OPENROUTER_MODELS = 'deepseek/deepseek-v4:free,qwen/qwen3.8-27b:free,openrouter/free,baidu/ernie-5.5-flash-preview:free,z-ai/glm-5.3,moonshotai/kimi-k3,google/gemma-4-31b-it:free';
+process.env.MISTRAL_MODELS = 'zai-glm-5-3,mistral-large-4-0';
+b4 = seen.length;
+await last({pass: 'secret', prompt: 'p'});
+out.filtered = seen.slice(b4).map(x => x.body.model || 'gemini');
+delete process.env.OPENROUTER_MODELS; delete process.env.MISTRAL_MODELS;
 mode = 'search';
 b4 = seen.length;
 await last({pass: 'secret', prompt: 'p', search: true});

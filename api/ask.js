@@ -1,18 +1,18 @@
 // Vercel 函數：把頁面的提問和書頁相片轉交 AI，逐段串流答覆。
-// 引擎次序：OpenRouter（OPENROUTER_API_KEY）→ GitHub Models（GITHUB_TOKEN，fine-grained token，只需 Models: Read）
-// → Google Gemini（GEMINI_API_KEY）。另需 APP_PASSCODE（通行碼，防止別人用你的額度）。
-// 金鑰設一個也可以；前一個出錯、額度用完或輸入太長，就自動改用下一個。
-// 可選：OPENROUTER_MODELS（逗號分隔；預設 openrouter/free,google/gemma-4-31b-it:free）。
-// 可選：GITHUB_MODELS（逗號分隔，按次序試；預設 openai/gpt-4.1,openai/o4-mini）；GITHUB_MODELS_URL（入口，逗號分隔）；
+// 引擎次序：OpenRouter（OPENROUTER_API_KEY）→ Mistral（MISTRAL_API_KEY）→ Google Gemini（GEMINI_API_KEY）。
+// 另需 APP_PASSCODE（通行碼，防止別人用你的額度）。金鑰設一個也可以；前一個出錯、額度用完或輸入太長，就自動改用下一個。
+// 每個引擎都要求最高推理深度；中國公司的模型（含以其為底的衍生模型）一律不用，即使環境變數列了也會略過。
+// 可選：OPENROUTER_MODELS（逗號分隔；預設 Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra，全部免費）；
+// MISTRAL_MODELS（預設 mistral-large-4-0,mistral-medium-3-5）；
 // GEMINI_MODEL（預設 gemini-3.8-pro,gemini-3.8-flash）；GEMINI_THINKING（LOW／MEDIUM／HIGH／XHIGH／OFF，預設 XHIGH）。
-// 請求可加 search: true（新書推介）：要用 Google 搜尋，所以先用 Gemini，GitHub 做後備（後備沒有搜尋）。
+// 請求可加 search: true（新書推介）：要用 Google 搜尋，所以先用 Gemini，其他做後備（後備沒有搜尋）。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "...", "sources": [...], "provider": "...", "model": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
-const GITHUB_URLS = 'https://models.github.ai/inference/chat/completions';
-const GITHUB_DEFAULT = 'openai/gpt-4.1,openai/o4-mini';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_DEFAULT = 'openrouter/free,google/gemma-4-31b-it:free';
+const OPENROUTER_DEFAULT = 'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free';
+const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions';
+const MISTRAL_DEFAULT = 'mistral-large-4-0,mistral-medium-3-5';
 const GEMINI_DEFAULT = 'gemini-3.8-pro,gemini-3.8-flash';
 const MAX_IMAGES = 4;
 const MAX_PROMPT = 60000;
@@ -23,7 +23,10 @@ const json = (status, body) => new Response(JSON.stringify(body), {
   status, headers: {'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store'}
 });
 const list = (v, d) => String(v || d).split(',').map(m => m.trim()).filter(Boolean);
-const providers = () => [process.env.OPENROUTER_API_KEY ? 'openrouter' : '', process.env.GITHUB_TOKEN ? 'github' : '', process.env.GEMINI_API_KEY ? 'gemini' : ''].filter(Boolean);
+// 中國公司的模型及其衍生模型；openrouter/free、openrouter/auto 會隨機路由到它們，所以也排除
+const CHINESE = /(^|[/:])(deepseek|qwen|qwq|alibaba|ali-|z-ai|zai|glm|thudm|zhipu|chatglm|moonshot|kimi|minimax|baidu|ernie|tencent|hunyuan|bytedance|seed|doubao|stepfun|step-?\d|inclusionai|ling-|ring-|xiaomi|mimo|meituan|longcat|kwaipilot|kwai|kling|01-ai|yi-|internlm|intern-|shanghai|baichuan|iflytek|spark-|xingchen|telechat|dots|rednote|xiaohongshu|particle-ai|sensetime|sensenova|skywork|kunlun|openbmb|minicpm|huawei|pangu|ant-|bailing|openrouter\/(free|auto)$)/i;
+const models = (v, d) => list(v, d).filter(m => !CHINESE.test(m));
+const providers = () => [process.env.OPENROUTER_API_KEY ? 'openrouter' : '', process.env.MISTRAL_API_KEY ? 'mistral' : '', process.env.GEMINI_API_KEY ? 'gemini' : ''].filter(Boolean);
 const configured = () => !!(providers().length && process.env.APP_PASSCODE);
 
 class ProviderError extends Error {
@@ -65,7 +68,7 @@ export async function POST(request) {
         let opened, sent = false;
         try {
           opened = p === 'openrouter' ? await openOpenRouter(images, prompt, request.signal)
-            : p === 'github' ? await openGithub(images, prompt, request.signal)
+            : p === 'mistral' ? await openMistral(images, prompt, request.signal)
             : await openGemini(images, prompt, request.signal, search);
           for await (const ev of opened.events) {
             if (ev.t) { sent = true; send({t: ev.t}); }
@@ -88,116 +91,62 @@ export async function POST(request) {
   return new Response(stream, {headers: {'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store'}});
 }
 
-/* ---------- GitHub Models（OpenAI 格式的 chat completions，SSE 串流）---------- */
-// 兩個入口按次序試：models.github.ai（型號名有 openai/ 前綴），舊入口 models.inference.ai.azure.com（型號名無前綴）
-async function openGithub(images, prompt, signal) {
-  const urls = list(process.env.GITHUB_MODELS_URL, GITHUB_URLS);
-  const errs = [];
-  for (const url of urls) {
-    try { return await openGithubAt(url, images, prompt, signal); }
-    catch (e) {
-      if (e && e.name === 'AbortError') throw e;
-      errs.push(e);
-    }
-  }
-  const last = errs[errs.length - 1] || new ProviderError('upstream');
-  throw new ProviderError(last.code || 'upstream', last.status, errs.map(e => e.detail || e.message).join(' ／ '));
+/* ---------- OpenAI 格式的 chat completions（OpenRouter、Mistral），SSE 串流 ---------- */
+// OpenRouter：香港免 VPN，由 Vercel 伺服器連線；reasoning.effort = high（最高推理深度）。
+function openOpenRouter(images, prompt, signal) {
+  return openChat('openrouter', process.env.OPENROUTER_URL || OPENROUTER_URL, process.env.OPENROUTER_API_KEY,
+    models(process.env.OPENROUTER_MODELS, OPENROUTER_DEFAULT), images, prompt, signal,
+    {'x-title': 'Reading Log'}, {reasoning: {effort: 'high'}});
+}
+// Mistral：reasoning_effort = high（Large 4、Medium 3.5 都接受）；思考過程以 thinking 區塊分開送出，不會混入答覆。
+function openMistral(images, prompt, signal) {
+  return openChat('mistral', process.env.MISTRAL_URL || MISTRAL_URL, process.env.MISTRAL_API_KEY,
+    models(process.env.MISTRAL_MODELS, MISTRAL_DEFAULT), images, prompt, signal,
+    {}, {reasoning_effort: 'high'});
 }
 
-async function openGithubAt(url, images, prompt, signal) {
-  const host = new URL(url).host;
-  const content = [
-    ...images.map(im => ({type: 'image_url', image_url: {url: `data:${im.type};base64,${im.data}`}})),
-    {type: 'text', text: prompt}
-  ];
-  let last = new ProviderError('upstream');
-  for (const m of list(process.env.GITHUB_MODELS, GITHUB_DEFAULT)) {
-    const model = /azure/i.test(url) ? m.replace(/^[^/]+\//, '') : m;
-    let r, ct = '', txt = '', plain = false;
-    // 先試串流；回覆不是答覆（例如純文字「OK」）就改用非串流再試一次
-    for (const stream of [true, false]) {
-      try {
-        r = await postFollow(url, {
-          authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-          'content-type': 'application/json',
-          accept: stream ? 'text/event-stream' : 'application/json',
-          'x-github-api-version': '2022-11-28',
-          'user-agent': 'reading-log'
-        }, JSON.stringify({model, stream, messages: [{role: 'user', content}]}), signal);
-      } catch (e) {
-        if (e && e.name === 'AbortError') throw e;
-        r = null; last = new ProviderError('network', 0, `${host} ${short(e && e.message)}`);
-        break;
-      }
-      ct = r.headers.get('content-type') || '';
-      if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'github', model, events: chatEvents(r, 'github')};
-      txt = await r.text().catch(() => '');
-      plain = r.ok;
-      if (!plain) break;
-    }
-    if (!r) continue;
-    if (plain) { last = new ProviderError('upstream', r.status, `${host} ${model} 回覆不是答覆（${ct}）${short(txt)}`); continue; }
-    last = new ProviderError(
-      r.status === 401 || r.status === 403 ? 'server_key'
-        : r.status === 429 ? 'rate_limited'
-        : r.status === 413 || /token.*(limit|large)|too large/i.test(txt) ? 'prompt_too_large'
-        : r.status === 400 && /image/i.test(txt) ? 'image_rejected'
-        : 'upstream', r.status, `${host} ${model} ${innerMessage(txt)}`);
-  }
-  throw last;
-}
-
-// 跟隨轉址時保持 POST 和內容（fetch 遇到 301／302 會改成 GET，只會拿到「OK」）
-async function postFollow(url, headers, body, signal) {
-  let u = url;
-  for (let i = 0; i < 4; i++) {
-    const r = await fetch(u, {method: 'POST', headers, body, signal, redirect: 'manual'});
-    const loc = r.headers.get('location');
-    if (r.status >= 300 && r.status < 400 && loc) { await r.body?.cancel().catch(() => {}); u = new URL(loc, u).toString(); continue; }
-    return r;
-  }
-  throw new ProviderError('upstream', 0, 'github 轉址太多次');
-}
-
-/* ---------- OpenRouter（OpenAI 格式，SSE 串流；香港免 VPN，由 Vercel 伺服器連線）---------- */
-async function openOpenRouter(images, prompt, signal) {
-  const url = process.env.OPENROUTER_URL || OPENROUTER_URL;
+async function openChat(name, url, key, list, images, prompt, signal, headers, deep) {
   const content = [
     ...images.map(im => ({type: 'image_url', image_url: {url: `data:${im.type};base64,${im.data}`}})),
     {type: 'text', text: prompt}
   ];
   const errs = [];
   let code = 'upstream';
-  for (const model of list(process.env.OPENROUTER_MODELS, OPENROUTER_DEFAULT)) {
-    let r;
-    try {
-      r = await fetch(url, {
-        method: 'POST', signal,
-        headers: {
-          authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'content-type': 'application/json',
-          accept: 'text/event-stream',
-          'x-title': 'Reading Log'
-        },
-        body: JSON.stringify({model, stream: true, messages: [{role: 'user', content}]})
-      });
-    } catch (e) {
-      if (e && e.name === 'AbortError') throw e;
-      errs.push(`${model} ${short(e && e.message)}`); code = 'network';
-      continue;
+  if (!list.length) throw new ProviderError('upstream', 0, `${name} 沒有可用模型（中國模型已排除）`);
+  for (const model of list) {
+    // 先要求最高推理深度；模型不接受（400 並提及 reasoning）就用預設再試一次
+    for (const extra of [deep, {}]) {
+      let r;
+      try {
+        r = await fetch(url, {
+          method: 'POST', signal,
+          headers: {authorization: `Bearer ${key}`, 'content-type': 'application/json', accept: 'text/event-stream', ...headers},
+          body: JSON.stringify({model, stream: true, messages: [{role: 'user', content}], ...extra})
+        });
+      } catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        errs.push(`${model} ${short(e && e.message)}`); code = 'network';
+        break;
+      }
+      const ct = r.headers.get('content-type') || '';
+      if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name, model, events: chatEvents(r, name)};
+      const txt = await r.text().catch(() => '');
+      if (r.status === 400 && Object.keys(extra).length && /reason|think|effort/i.test(txt)) continue;
+      code = r.status === 401 || r.status === 403 ? 'server_key'
+        : r.status === 402 || r.status === 429 ? 'rate_limited'
+        : r.status === 413 || /token.*(limit|large)|context length|too large/i.test(txt) ? 'prompt_too_large'
+        : r.status === 400 && /image/i.test(txt) ? 'image_rejected'
+        : 'upstream';
+      errs.push(`${model} ${r.status} ${innerMessage(txt)}`);
+      break;
     }
-    const ct = r.headers.get('content-type') || '';
-    if (r.ok && r.body && /event-stream|json/i.test(ct)) return {name: 'openrouter', model, events: chatEvents(r, 'openrouter')};
-    const txt = await r.text().catch(() => '');
-    code = r.status === 401 || r.status === 403 ? 'server_key'
-      : r.status === 402 || r.status === 429 ? 'rate_limited'
-      : r.status === 413 || /token.*(limit|large)|context length/i.test(txt) ? 'prompt_too_large'
-      : r.status === 400 && /image/i.test(txt) ? 'image_rejected'
-      : 'upstream';
-    errs.push(`${model} ${r.status} ${innerMessage(txt)}`);
   }
   throw new ProviderError(code, 0, errs.join(' ／ '));
 }
+
+// 只取答覆文字：content 可能是字串，也可能是區塊陣列（Mistral 推理模式：thinking 區塊略過，只取 text）
+const textOf = c => typeof c === 'string' ? c
+  : Array.isArray(c) ? c.map(x => x && x.type === 'text' && typeof x.text === 'string' ? x.text : '').join('') : '';
 
 async function* chatEvents(r, name) {
   const rd = r.body.getReader(), dec = new TextDecoder();
@@ -213,7 +162,8 @@ async function* chatEvents(r, name) {
     if (j.error) throw new ProviderError(j.error.code === 'content_filter' ? 'refused' : 'upstream', 0, short(j.error.message || j.error.code));
     const c = j.choices && j.choices[0];
     if (!c) return;
-    if (c.delta && typeof c.delta.content === 'string' && c.delta.content) { got = true; yield {t: c.delta.content}; }
+    const t = c.delta ? textOf(c.delta.content) : '';
+    if (t) { got = true; yield {t}; }
     if (c.finish_reason) finish = c.finish_reason;
   };
   for (;;) {
@@ -229,7 +179,7 @@ async function* chatEvents(r, name) {
     let j = null;
     try { j = JSON.parse(raw); } catch (e) {}
     const c = j && j.choices && j.choices[0];
-    const text = c && c.message && typeof c.message.content === 'string' ? c.message.content : '';
+    const text = c && c.message ? textOf(c.message.content) : '';
     if (text) { yield {t: text}; finish = c.finish_reason || finish; }
     else if (finish !== 'content_filter') throw new ProviderError('upstream', 0, `${name} 沒有回覆內容（${r.status} ${r.headers.get('content-type') || ''} ${r.url || ''}）` + innerMessage(raw));
   }
