@@ -9,13 +9,13 @@
 | | Claude 版 | Vercel 網頁版 | GitHub 版 |
 |---|---|---|---|
 | 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
-| 答覆 | Claude 自動答覆 | OpenRouter 自動答覆，GitHub Models、Gemini 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
+| 答覆 | Claude 自動答覆 | OpenRouter 自動答覆，Mistral、Gemini 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
 | 新書推介 | 沒有 | 有（每星期自動） | 沒有 |
 | 記錄存放 | Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
 
 - 三個版本的記錄**互不相通**，只能用「匯出／匯入備份」搬（見第七節）。
 - 頁底的版本號三邊相同，即代表程式已同步。
-- 答覆深度：Claude 版最深入。Vercel 版先用 OpenRouter 免費模型，再 GitHub Models（gpt-4.1，再 o4-mini）；出錯、額度用完或輸入太長，自動改用 Gemini（先 Pro 後 Flash，最高思考深度）。
+- 答覆深度：Claude 版最深入。Vercel 版先用 OpenRouter 免費模型（Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra），再 Mistral（Large 4，再 Medium 3.5）；出錯、額度用完或輸入太長，自動改用 Gemini（先 Pro 後 Flash）。三個引擎都要求最高推理深度。中國公司的模型（DeepSeek、Qwen、GLM、Kimi、MiniMax、ERNIE 等及其衍生模型）一律不用，`openrouter/free` 會隨機路由到它們，所以也排除；環境變數列了也會被略過。
 
 ---
 
@@ -23,11 +23,11 @@
 
 1. **取得金鑰**（金鑰不要貼在任何對話，也不要放上 GitHub；外洩了就即刻刪除、重開）：
    - 第一引擎 OpenRouter（香港免 VPN）：openrouter.ai → Keys → Create Key。
-   - 第二引擎 GitHub Models：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate，權限只開 **Models: Read**。
+   - 第二引擎 Mistral：console.mistral.ai → API Keys → Create new key。
    - 後備 Gemini（新書推介也要用）：aistudio.google.com → Get API key → Create API key。
 2. **Vercel 加環境變數**：專案 → Settings → Environment Variables（手機版在「☰」選單內），類型揀 Secret：
    - `OPENROUTER_API_KEY`：OpenRouter 金鑰
-   - `GITHUB_TOKEN`：GitHub 金鑰
+   - `MISTRAL_API_KEY`：Mistral 金鑰
    - `GEMINI_API_KEY`：Gemini 金鑰
    - `APP_PASSCODE`：自訂通行碼（大細楷有分，記住它）
    - 環境揀 **Production** → Save
@@ -39,8 +39,8 @@
 
 | 變數 | 作用 | 預設 |
 |---|---|---|
-| `OPENROUTER_MODELS` | OpenRouter 模型次序，逗號分隔 | `openrouter/free,google/gemma-4-31b-it:free` |
-| `GITHUB_MODELS` | GitHub 模型次序，逗號分隔 | `openai/gpt-4.1,openai/o4-mini` |
+| `OPENROUTER_MODELS` | OpenRouter 模型次序，逗號分隔 | `nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free` |
+| `MISTRAL_MODELS` | Mistral 模型次序，逗號分隔 | `mistral-large-4-0,mistral-medium-3-5` |
 | `GEMINI_MODEL` | Gemini 模型次序，逗號分隔 | `gemini-3.8-pro,gemini-3.8-flash` |
 | `GEMINI_THINKING` | 思考深度 `LOW`／`MEDIUM`／`HIGH`／`XHIGH`／`OFF` | `XHIGH` |
 
@@ -129,10 +129,10 @@
 | Vercel 版只見「複製提問文字並儲存」 | `/api/ask` 顯示 `"configured":false` | 檢查兩個環境變數，然後 Redeploy |
 | 「請先在上面輸入通行碼」（`no_pass`） | 通行碼欄空白 | 輸入通行碼 |
 | 「通行碼不正確」（`bad_pass`） | 與 `APP_PASSCODE` 不符 | 清空重打；忘記了就在 Vercel 改新值再 Redeploy |
-| 「網站的 AI 金鑰未設定好或已失效」（`not_configured`／`server_key`） | 金鑰缺漏、錯誤、被刪除或權限不足 | 重開金鑰（GitHub 要有 Models: Read），更新 Vercel 變數，Redeploy |
+| 「網站的 AI 金鑰未設定好或已失效」（`not_configured`／`server_key`） | 金鑰缺漏、錯誤、被刪除或權限不足 | 重開金鑰，更新 Vercel 變數，Redeploy |
 | 「用量已到上限」（`rate_limited`） | 免費額度用完 | 稍後再試，或先按「只儲存」 |
 | 「拒絕處理這個內容」（`refused`） | 安全過濾 | 換相片或修改文字 |
-| 答覆在中途停止 | GitHub 免費版每次輸出有上限 | 再試一次；經常發生就在 Vercel 刪除 `GITHUB_TOKEN` 並 Redeploy，改回 Gemini 為主 |
+| 答覆在中途停止 | 免費模型每次輸出有上限 | 再試一次；經常發生就在 Vercel 設 `OPENROUTER_MODELS` 換模型，或刪除 `OPENROUTER_API_KEY` 改由 Mistral 為主 |
 | 「相片無法讀取」（`image_rejected`） | 格式問題 | 換 JPEG 或 PNG |
 | 「連線中斷」 | 網絡或伺服器問題 | 再試一次 |
 | Vercel 介面出現 security checkpoint 錯誤 | Vercel 本身的防護 | Cancel，重新整理，再到 Deployments 重新部署 |

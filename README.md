@@ -11,15 +11,16 @@
 | | Claude 版（主力） | Vercel 網頁版 | GitHub 版（備用） |
 |---|---|---|---|
 | 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
-| 上載後答覆 | 自動（Claude） | 自動（OpenRouter → GitHub Models → Gemini，預設都用免費額度；輸入通行碼，經 `api/ask.js`） | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
+| 上載後答覆 | 自動（Claude） | 自動（OpenRouter → Mistral → Gemini，全部要求最高推理深度，不用中國模型；輸入通行碼，經 `api/ask.js`） | 按「複製提問文字並儲存」，到 Claude 取得答覆，再在記錄上「貼上答覆」 |
 | 記錄存放 | 你的 Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
 
 ### Vercel 網頁版設定
 
 在 Vercel 專案 → Settings → Environment Variables 加以下變數（金鑰最少一個），然後 Redeploy：
 
-- `OPENROUTER_API_KEY`：第一引擎 OpenRouter（openrouter.ai → Keys），香港免 VPN。預設 `openrouter/free`，再 `google/gemma-4-31b-it:free`（可用 `OPENROUTER_MODELS` 改）。
-- `GITHUB_TOKEN`：第二引擎 GitHub Models。GitHub → Settings → Developer settings → Fine-grained tokens 建立，權限只開 **Models: Read**。預設先 `openai/gpt-4.1`，再 `openai/o4-mini`（可用 `GITHUB_MODELS` 改）。
+- `OPENROUTER_API_KEY`：第一引擎 OpenRouter（openrouter.ai → Keys），香港免 VPN。預設 `nvidia/nemotron-3.5-super-vl:free` → `google/gemma-4-31b-it:free` → `nvidia/nemotron-3-ultra-550b-a55b:free`（可用 `OPENROUTER_MODELS` 改），推理深度 high。
+- `MISTRAL_API_KEY`：第二引擎 Mistral（console.mistral.ai → API Keys）。預設先 `mistral-large-4-0`，再 `mistral-medium-3-5`（可用 `MISTRAL_MODELS` 改），`reasoning_effort` high；思考過程不會混入答覆。
+- 中國公司的模型（DeepSeek、Qwen、GLM、Kimi、MiniMax、ERNIE 等及其衍生模型）一律不用，`openrouter/free` 會隨機路由到它們，所以也排除；環境變數列了也會被略過。
 
 - `GEMINI_API_KEY`：後備 Gemini，以及新書推介（要 Google 搜尋）。Google AI Studio（aistudio.google.com → Get API key）建立，有免費額度。
 - `APP_PASSCODE`：自訂通行碼。網址是公開的，沒有通行碼的人不能用你的額度。
@@ -59,13 +60,14 @@
 | `METHOD.md` | 方法全文（由 `build.py` 從頁面產生，不要手改） |
 | `src/reading-log.src.html` | 唯一原始檔 |
 | `src/bg.jpg`、`src/VERSION` | 背景相片、發佈日期 |
-| `api/ask.js`、`package.json`、`vercel.json` | Vercel 網頁版的答覆函數（OpenRouter → GitHub Models → Gemini） |
+| `api/ask.js`、`package.json`、`vercel.json` | Vercel 網頁版的答覆函數（OpenRouter → Mistral → Gemini） |
 | `build.py` | 產生 `index.html`、`METHOD.md` 和 Claude 版（`dist/`） |
 | `tests/` | 實際開瀏覽器的測試：`test_local.py` 測 GitHub 版、Vercel 網頁版和 `api/ask.js`，`test_claude.py` 測 Claude 版 |
 | `CLAUDE.md` | 給 Claude 的更新守則 |
 
 ## 更新記錄
 
+- **2026-11-23**：引擎改為 OpenRouter → Mistral → Gemini（移除 GitHub Models），全部要求最高推理深度；排除中國模型。
 - **2026-11-22（二）**：新增 Vercel 網頁版直接答覆（`api/ask.js`＋通行碼，用 Gemini 免費額度）；repo 加入 `src/`、`build.py`、`tests/`。
 
 - **2026-11-22**：按 Gemini 覆核及 Claude 驗證更新。上載改為雙模式（內文先重述後核對、封面直接篩書）；答覆由 9 節精簡為 5 節；新增模型卡、到期回填和間隔複習；迴路指標改為追蹤建卡、回填、修正；入定實驗改用擲硬幣分配；新增匯出和匯入；頁底加版本號和兩版連結；repo 改為單一原始檔。
