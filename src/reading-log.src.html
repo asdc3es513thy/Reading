@@ -124,59 +124,27 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 .flow li{counter-increment:f;display:flex;gap:10px;align-items:baseline}
 .flow li::before{content:counter(f);flex:none;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-ink);text-shadow:none;
   font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
-/* 全書整理：十種版式 */
-.dg-panel{gap:10px}
-.dg{display:flex;flex-direction:column;gap:10px;min-width:0}
-.dg h4{margin:0;font-size:.95rem}
-.dg-title{font-size:1.05rem!important;color:var(--accent)}
-.dg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
-.dg-box{border-radius:var(--r);padding:10px 12px;background:var(--veil);border:1px solid rgba(111,208,192,.25);min-width:0;display:flex;flex-direction:column;gap:4px}
-.dg-box ul,.dg-links{margin:0;padding-left:1.1em;font-size:.9rem}
-.dg-box li.hot{color:var(--danger);font-weight:600}
-.dg-box li.warn{color:#f5c26b}
-.dg-desc{margin:0;color:var(--muted);font-size:.85rem}
-.dg-svg{width:100%;height:auto;max-height:420px}
-.dg-node{fill:rgba(111,208,192,.16);stroke:var(--accent);stroke-width:1.2}
-.dg-label{fill:var(--ink);font-size:13px;font-family:var(--font)}
-.dg-rel{fill:var(--muted);font-size:10px;font-family:var(--font)}
-.dg-edge{stroke:rgba(195,207,209,.6);stroke-width:1.2}
-.dg-arrow{fill:rgba(195,207,209,.8)}
-.dg-flow{display:flex;flex-direction:column;align-items:stretch}
-.dg-join{text-align:center;color:var(--accent);font-size:.85rem;padding:4px 0}
-.dg-timeline .dg-flow{border-left:2px solid var(--accent);margin-left:8px;padding-left:14px}
-.dg-timeline .dg-step{position:relative}
-.dg-timeline .dg-step::before{content:"";position:absolute;left:-22px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--accent)}
-.dg-timeline .dg-join{color:transparent;padding:2px 0}
-.dg-quotes{padding:18px 14px;border-radius:var(--r);background:linear-gradient(160deg,rgba(111,208,192,.12),rgba(0,0,0,.35));text-align:center;gap:18px}
-.dg-quote{margin:0}
-.dg-quote blockquote{margin:0;font-size:1.15rem;line-height:1.5;font-weight:600}
-.dg-quote:nth-of-type(odd) blockquote{color:var(--accent)}
-.dg-quote figcaption{margin-top:4px;font-size:.8rem;color:var(--muted)}
-.dg-handwritten{background:#fbf5e3 repeating-linear-gradient(#fbf5e3 0 27px,#c9d6e8 27px 28px);color:#24324a;text-shadow:none;padding:16px 14px 16px 34px;border-radius:6px;
-  font-family:"Kaiti TC","STKaiti","KaiTi","BiauKai","Klee One",var(--font);box-shadow:inset 26px 0 0 -24px #e59a9a;line-height:28px}
-.dg-handwritten .dg-title{color:#1d4f91}
-.dg-handwritten .dg-box{background:transparent;border:0;padding:0}
-.dg-handwritten .dg-grid{grid-template-columns:1fr}
-.dg-handwritten .dg-desc{color:#5a6475}
-.dg-handwritten li.hot{color:#c0392b}
-.dg-handwritten li.warn{color:#b9770e}
-.dg-blueprint{background:#0d3b6e;background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px);background-size:20px 20px;
-  padding:14px;border-radius:6px;font-family:ui-monospace,"SF Mono",Menlo,var(--font);color:#e6f1ff;text-shadow:none}
-.dg-blueprint .dg-title{color:#fff;border-bottom:1px solid rgba(255,255,255,.5);padding-bottom:6px}
-.dg-blueprint .dg-box{background:rgba(13,59,110,.75);border:1px dashed rgba(255,255,255,.7);border-radius:2px}
-.dg-blueprint .dg-desc{color:#a9c7ea}
-.dg-actionplan .dg-todo{align-items:flex-start;padding:4px 0}
-.dg-actionplan .dg-todo>span{display:flex;flex-direction:column}
-.dg-actionplan .dg-todo small{color:var(--muted)}
-.dg-actionplan .dg-todo input:checked+span>span{text-decoration:line-through;color:var(--muted)}
-.dg-iceberg{gap:0;border-radius:var(--r);overflow:hidden}
-.dg-iceberg .dg-title{padding:10px 12px 0}
-.dg-above{background:linear-gradient(rgba(170,215,240,.22),rgba(170,215,240,.08));padding:10px 12px}
-.dg-water{height:6px;background:repeating-linear-gradient(90deg,#6fd0c0 0 14px,transparent 14px 22px)}
-.dg-below{background:linear-gradient(rgba(10,60,110,.55),rgba(3,15,35,.85));padding:10px 12px}
-.dg-zone{margin:0 0 6px;font-size:.8rem;color:var(--accent);font-weight:600}
-.dg-ice{margin:0 0 6px;font-size:.92rem}
-.dg-ice small{display:block;color:var(--muted);font-size:.78rem}
+/* 全書整理：每個版式一張圖；版式用 scroll snap 橫向掃動 */
+.dg-panel{gap:10px;padding:10px}
+.dg-chips{position:sticky;top:var(--tabs-h,0px);z-index:5;display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px;margin:-4px -4px 0;
+  border-radius:10px;background:rgba(7,11,16,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);scrollbar-width:none}
+.dg-chips::-webkit-scrollbar{display:none}
+.dg-chip{flex:none;scroll-snap-align:start;min-height:36px;padding:6px 12px;border-radius:999px;font-size:.88rem;white-space:nowrap}
+.dg-chip.has{color:var(--accent)}
+.dg-chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);text-shadow:none;font-weight:600}
+.dg-gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scroll-behavior:auto;border-radius:10px;scrollbar-width:thin}
+.dg-gal:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dg-slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:10px;padding:2px}
+.dg-shead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.dg-shead h4{margin:0;font-size:.98rem}
+.dg-shead p{margin:2px 0 0}
+.dg-fig{margin:0;border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.dg-img{display:block;width:100%;height:auto;text-shadow:none}
+.dg-ck:focus{outline:none}.dg-ck:focus-visible rect:first-child{stroke:#6fd0c0;stroke-width:2}
+.dg-empty{padding:28px 12px;text-align:center;border:1.5px dashed rgba(111,208,192,.5);border-radius:10px}
+.dg-err{color:var(--danger)}
+.dg-nav button{min-width:96px}
+.tabs{position:sticky;top:0;z-index:20}
 </style>
 
 </head>
@@ -1023,147 +991,439 @@ function digestPrompt(bk, kind){
     '輸出規則：只用下列行格式，每行一項，不要開場白、總結、Markdown 符號或其他文字。',
     '可用的行：「題：」「節：名稱｜說明」「點：」「連：甲 → 乙｜關係」「句：句子｜出處」「做：行動｜完成標準」「上：」「下：文字｜對應」。「點」「做」屬於它上面最近的「節」。',
     '這次的內容：' + d[3],
-    '繁體中文書面語，每行盡量短。',
+    '第一行必須是「題：」。繁體中文書面語，每行盡量短。',
     '',
     '我的閱讀記錄（共 ' + m.count + ' 條，按時間先後）：',
     m.text].filter(x => x !== '').join('\n');
 }
-function parseDigest(raw){
+function parseDigest(raw, kind){
   const o = {title: '', groups: [], links: [], quotes: [], todos: [], above: [], below: []};
   let g = null;
   const two = s => { const i = s.search(/[｜|]/); return i < 0 ? [s.trim(), ''] : [s.slice(0, i).trim(), s.slice(i + 1).trim()]; };
-  for (let line of String(raw || '').split('\n')) {
-    line = line.replace(/^[\s>*#•\-]+/, '').replace(/\*\*/g, '').trim();
-    const m = /^(題|節|點|連|句|做|上|下)\s*[:：]\s*(.*)$/.exec(line);
-    if (!m || !m[2]) continue;
-    const k = m[1], v = m[2].trim();
-    if (k === '題') o.title = o.title || v;
-    else if (k === '節') { const [name, desc] = two(v); g = {name, desc, items: [], todos: []}; o.groups.push(g); }
-    else if (k === '點') { if (!g) { g = {name: '', desc: '', items: [], todos: []}; o.groups.push(g); } g.items.push(v); }
-    else if (k === '連') { const [ab, rel] = two(v), p = ab.split(/\s*(?:→|->|⟶)\s*/); if (p.length >= 2 && p[0] && p[1]) o.links.push({a: p[0], b: p[1], rel}); }
+  const group = (name, desc) => { g = {name, desc, items: [], todos: []}; o.groups.push(g); };
+  const item = v => {
+    if (kind === 'actionplan') { const [t, how] = two(v), td = {t, how, group: g ? g.name : ''}; o.todos.push(td); if (g) g.todos.push(td); return; }
+    if (kind === 'quotes' && /[「“"]/.test(v)) { const [t, src] = two(v); o.quotes.push({t: t.replace(/^[「『“"]|[」』”"]$/g, ''), src}); return; }
+    if (!g) group('', ''); g.items.push(v);
+  };
+  for (const rawLine of String(raw || '').split('\n')) {
+    const bullet = /^\s*(?:[-*•・●]|\d+[.、)）])\s+/.test(rawLine), head = /^\s*#{1,4}\s|^\s*【[^】]+】\s*$/.test(rawLine);
+    const line = rawLine.replace(/^\s*(?:#{1,4}|[-*•・●>]|\d+[.、)）])\s*/, '').replace(/\*\*/g, '').trim();
+    if (!line) continue;
+    const m = /^(題|標題|節|點|連|句|做|上|下)\s*[:：]\s*(.*)$/.exec(line);
+    if (!m) {
+      if (head) { const [n, d] = two(line.replace(/[【】]/g, '')); group(n, d); }
+      else if (bullet) item(line);
+      continue;
+    }
+    const k = m[1], v = m[2].trim(); if (!v) continue;
+    if (k === '題' || k === '標題') o.title = o.title || v;
+    else if (k === '節') { const [name, desc] = two(v); group(name, desc); }
+    else if (k === '點') { if (!g) group('', ''); g.items.push(v); }
+    else if (k === '連') { const [ab, rel] = two(v), p = ab.split(/\s*(?:→|->|⟶|➔)\s*/); if (p.length >= 2 && p[0] && p[1]) o.links.push({a: p[0], b: p[1], rel}); }
     else if (k === '句') { const [t, src] = two(v); o.quotes.push({t: t.replace(/^[「『“"]|[」』”"]$/g, ''), src}); }
     else if (k === '做') { const [t, how] = two(v), td = {t, how, group: g ? g.name : ''}; o.todos.push(td); if (g) g.todos.push(td); }
     else if (k === '上') o.above.push(v);
-    else { const [t, ref] = two(v); o.below.push({t, ref}); }
+    else { const [t, ref] = two(v); o.below.push({t, ref: ref.replace(/^對應[:：\s]*/, '')}); }
   }
-  o.empty = !o.title && !o.groups.length && !o.links.length && !o.quotes.length && !o.todos.length && !o.above.length && !o.below.length;
+  const items = o.groups.reduce((n, x) => n + x.items.length + (x.name ? 1 : 0), 0);
+  o.empty = kind === 'quotes' ? !o.quotes.length : kind === 'actionplan' ? !o.todos.length
+    : kind === 'iceberg' ? !(o.above.length || o.below.length) : !items;
   return o;
 }
-const SVGNS = 'http://www.w3.org/2000/svg';
-const svgEl = (tag, attrs, text) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
-const cut = (s, n) => [...s].length > n ? [...s].slice(0, n - 1).join('') + '…' : s;
-function groupBox(g, cls){
-  const b = el('div', cls || 'dg-box');
-  if (g.name) b.append(el('h4', null, g.name));
-  if (g.desc) b.append(el('p', 'dg-desc', g.desc));
-  if (g.items.length) { const ul = el('ul'); for (const t of g.items) ul.append(el('li', /^重要[!！]/.test(t) ? 'hot' : /^小心[:：]/.test(t) ? 'warn' : null, t)); b.append(ul); }
-  return b;
-}
-function linkList(o){ const ul = el('ul', 'dg-links'); for (const l of o.links) ul.append(el('li', null, l.a + ' → ' + l.b + (l.rel ? '：' + l.rel : ''))); return ul; }
-function conceptMap(o){
-  const names = o.groups.map(g => g.name).filter(Boolean);
-  const find = n => names.findIndex(x => x === n || x.includes(n) || n.includes(x));
-  for (const l of o.links) for (const n of [l.a, l.b]) if (find(n) < 0 && names.length < 12) names.push(n);
-  const N = names.length, W = 420, H = 380, R = N > 1 ? 140 : 0, cx = W / 2, cy = H / 2;
-  const pos = names.map((_, i) => [cx + R * Math.cos(-Math.PI / 2 + 2 * Math.PI * i / N), cy + R * Math.sin(-Math.PI / 2 + 2 * Math.PI * i / N)]);
-  const svg = svgEl('svg', {viewBox: '0 0 ' + W + ' ' + H, class: 'dg-svg', role: 'img', 'aria-label': '概念關係圖'});
-  const defs = svgEl('defs'), mk = svgEl('marker', {id: 'dgArrow', viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse'});
-  mk.append(svgEl('path', {d: 'M0,0 L10,5 L0,10 z', class: 'dg-arrow'})); defs.append(mk); svg.append(defs);
-  for (const l of o.links) {
-    const i = find(l.a), j = find(l.b); if (i < 0 || j < 0 || i === j) continue;
-    const [x1, y1] = pos[i], [x2, y2] = pos[j], dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1, k = 44 / d;
-    svg.append(svgEl('line', {x1: x1 + dx * k, y1: y1 + dy * k, x2: x2 - dx * k, y2: y2 - dy * k, class: 'dg-edge', 'marker-end': 'url(#dgArrow)'}));
-    if (l.rel) svg.append(svgEl('text', {x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 4, class: 'dg-rel', 'text-anchor': 'middle'}, cut(l.rel, 6)));
+
+/* ---------- 全書整理：每個版式畫成一張 SVG 圖 ---------- */
+const SVGNS = 'http://www.w3.org/2000/svg', IW = 640, IP = 28;
+const HAND = '"Kaiti TC","STKaiti","KaiTi","BiauKai","Klee One","PingFang HK",serif';
+const SANS = '"PingFang HK","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif';
+const MONO = 'ui-monospace,"SF Mono",Menlo,"PingFang HK","Noto Sans TC",monospace';
+const ICONS = [
+  'M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 19h6v2H9z',
+  'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zm0 4a6 6 0 1 1 0 12a6 6 0 1 1 0-12zm0 4a2 2 0 1 0 0 4a2 2 0 1 0 0-4z',
+  'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM11 1h2v4h-2zM11 19h2v4h-2zM1 11h4v2H1zM19 11h4v2h-4zM4.2 5.6l1.4-1.4 2.8 2.8-1.4 1.4zM15.6 17l1.4-1.4 2.8 2.8-1.4 1.4zM4.2 18.4l2.8-2.8 1.4 1.4-2.8 2.8zM15.6 7l2.8-2.8 1.4 1.4L17 8.4z',
+  'M3 21h18v-2H3zM5 17h3V9H5zm5.5 0h3V4h-3zM16 17h3v-6h-3z',
+  'M4 3h7a2 2 0 0 1 2 2v16a2 2 0 0 0-2-2H4zM20 3h-5a2 2 0 0 0-2 2v16a2 2 0 0 1 2-2h5z',
+  'M12 2l3 6.9 7.5.7-5.7 5 1.7 7.4L12 18.3 5.5 22l1.7-7.4-5.7-5 7.5-.7z',
+  'M5 2h2v20H5zM8 3h11l-3 4 3 4H8z',
+  'M10 14a4 4 0 0 1 0-5.7l3-3a4 4 0 0 1 5.7 5.7l-1.5 1.5-1.4-1.4 1.5-1.5a2 2 0 0 0-2.9-2.9l-3 3a2 2 0 0 0 0 2.9zm4-4a4 4 0 0 1 0 5.7l-3 3a4 4 0 0 1-5.7-5.7l1.5-1.5 1.4 1.4-1.5 1.5a2 2 0 0 0 2.9 2.9l3-3a2 2 0 0 0 0-2.9z'
+];
+const HUES = ['#6fd0c0', '#f5c26b', '#f2877f', '#8fb7ff', '#c79bf2', '#9ed36a', '#ff9fc8', '#7fd6f2'];
+const sv = (tag, a, txt) => { const e = document.createElementNS(SVGNS, tag); for (const k in a) if (a[k] != null) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; return e; };
+const tw = (s, fs) => { let w = 0; for (const ch of s) w += /[\x20-\x7e]/.test(ch) ? fs * .56 : fs; return w; };
+function wrapT(s, fs, maxW, maxLines){
+  const out = []; let cur = '';
+  for (const ch of String(s || '')) {
+    if (ch === '\n') { out.push(cur); cur = ''; continue; }
+    if (cur && tw(cur + ch, fs) > maxW) { out.push(cur); cur = /\s/.test(ch) ? '' : ch; } else cur += ch;
   }
-  names.forEach((n, i) => {
-    const [x, y] = pos[i];
-    svg.append(svgEl('rect', {x: x - 48, y: y - 17, width: 96, height: 34, rx: 9, class: 'dg-node'}));
-    svg.append(svgEl('text', {x, y: y + 5, class: 'dg-label', 'text-anchor': 'middle'}, cut(n, 7)));
-  });
-  return svg;
+  if (cur) out.push(cur);
+  if (maxLines && out.length > maxLines) { out.length = maxLines; out[maxLines - 1] = out[maxLines - 1].slice(0, -1) + '…'; }
+  return out;
 }
-function renderDigest(kind, o, doc){
-  const root = el('div', 'dg dg-' + kind);
-  if (o.title) root.append(el('h4', 'dg-title', o.title));
-  if (kind === 'mentalmodels') {
-    root.append(conceptMap(o));
-    if (o.groups.length) { const g = el('div', 'dg-grid'); for (const x of o.groups) g.append(groupBox(x)); root.append(g); }
-    if (o.links.length) root.append(linkList(o));
-  } else if (kind === 'chaptermap' || kind === 'timeline') {
-    const flow = el('div', 'dg-flow');
-    o.groups.forEach((g, i) => {
-      if (i) { const l = o.links.find(x => x.b === g.name || (x.b && g.name.includes(x.b))); flow.append(el('div', 'dg-join', l && l.rel ? '↓ ' + l.rel : '↓')); }
-      flow.append(groupBox(g, 'dg-box dg-step'));
+// 多行文字：回傳佔用高度
+function txt(p, s, x, y, o){
+  const fs = o.fs || 14, lh = o.lh || fs * 1.45, lines = o.lines || wrapT(s, fs, o.w || 300, o.max);
+  const t = sv('text', {x, y: y + fs, 'font-size': fs, fill: o.fill || '#e8eef0', 'font-weight': o.bold ? 700 : null,
+    'font-family': o.font || SANS, 'text-anchor': o.anchor || null, 'text-decoration': o.strike ? 'line-through' : null});
+  lines.forEach((ln, i) => t.append(sv('tspan', {x, dy: i ? lh : 0}, ln)));
+  p.append(t);
+  return lines.length ? (lines.length - 1) * lh + fs * 1.3 : 0;
+}
+const hOf = (s, fs, w, lh, max) => { const n = wrapT(s, fs, w, max).length; return n ? (n - 1) * (lh || fs * 1.45) + fs * 1.3 : 0; };
+function icon(p, i, x, y, size, fill){
+  const g = sv('g', {transform: 'translate(' + x + ',' + y + ') scale(' + size / 24 + ')'});
+  g.append(sv('path', {d: ICONS[i % ICONS.length], fill, 'fill-rule': 'evenodd'})); p.append(g);
+}
+function arrowDefs(svg, id, color){
+  const d = sv('defs'), m = sv('marker', {id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse'});
+  m.append(sv('path', {d: 'M0,0 L10,5 L0,10 z', fill: color})); d.append(m); svg.append(d); return d;
+}
+function header(p, o, bk, y, c){
+  const t = o.title || bk;
+  y += txt(p, t, IP, y, {fs: 24, bold: true, w: IW - IP * 2, fill: c.title, font: c.font});
+  y += 4 + txt(p, '《' + bk + '》· 只整理已讀部分', IP, y, {fs: 12, fill: c.sub, w: IW - IP * 2, font: c.font});
+  return y + 16;
+}
+const DRAW = {
+  visualnotes(svg, o, bk){
+    const c = {title: '#e8eef0', sub: '#9fb0b4'};
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#0f1c26'}));
+    svg.append(sv('rect', {width: IW, height: 6, fill: '#6fd0c0'}));
+    let y = header(svg, o, bk, 22, c);
+    const cw = (IW - IP * 2 - 16) / 2, gs = o.groups;
+    for (let i = 0; i < gs.length; i += 2) {
+      const pair = gs.slice(i, i + 2), hs = pair.map(g => 58 + hOf(g.desc, 12, cw - 28) + g.items.reduce((n, t) => n + hOf(t, 14, cw - 44) + 6, 0) + 10);
+      const rh = Math.max(...hs);
+      pair.forEach((g, j) => {
+        const x = IP + j * (cw + 16), col = HUES[(i + j) % HUES.length];
+        svg.append(sv('rect', {x, y, width: cw, height: rh, rx: 14, fill: 'rgba(255,255,255,.04)', stroke: col, 'stroke-opacity': .45}));
+        svg.append(sv('circle', {cx: x + 30, cy: y + 30, r: 18, fill: col}));
+        icon(svg, i + j, x + 19, y + 19, 22, '#0f1c26');
+        txt(svg, g.name || '重點', x + 56, y + 12, {fs: 16, bold: true, w: cw - 66, max: 2, fill: col});
+        let yy = y + 56;
+        if (g.desc) yy += txt(svg, g.desc, x + 14, yy, {fs: 12, w: cw - 28, fill: '#9fb0b4'}) + 6;
+        for (const t of g.items) {
+          svg.append(sv('circle', {cx: x + 20, cy: yy + 9, r: 3, fill: col}));
+          yy += txt(svg, t, x + 30, yy, {fs: 14, w: cw - 44}) + 6;
+        }
+      });
+      y += rh + 14;
+    }
+    return y + 10;
+  },
+  mentalmodels(svg, o, bk){
+    const c = {title: '#e8eef0', sub: '#9fb0b4'};
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#0c1620'}));
+    arrowDefs(svg, 'mmA', '#9fb0b4');
+    let y = header(svg, o, bk, 22, c);
+    const names = o.groups.map(g => g.name).filter(Boolean);
+    const find = n => names.findIndex(x => x === n || x.includes(n) || n.includes(x));
+    for (const l of o.links) for (const n of [l.a, l.b]) if (find(n) < 0 && names.length < 12) names.push(n);
+    const N = names.length, R = N > 1 ? 200 : 0, cx = IW / 2, cy = y + 40 + R, nw = 124, nh = 46;
+    const pos = names.map((_, i) => [cx + R * Math.cos(-Math.PI / 2 + 2 * Math.PI * i / N), cy + R * .82 * Math.sin(-Math.PI / 2 + 2 * Math.PI * i / N)]);
+    const edges = sv('g'), labels = sv('g'), nodes = sv('g');
+    for (const l of o.links) {
+      const i = find(l.a), j = find(l.b); if (i < 0 || j < 0 || i === j) continue;
+      const [x1, y1] = pos[i], [x2, y2] = pos[j], dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1;
+      const k1 = Math.min(nw / 2 / Math.abs(dx || 1e-9), nh / 2 / Math.abs(dy || 1e-9)) * d, f1 = (k1 + 4) / d;
+      edges.append(sv('line', {x1: x1 + dx * f1, y1: y1 + dy * f1, x2: x2 - dx * f1, y2: y2 - dy * f1, stroke: '#9fb0b4', 'stroke-width': 1.6, 'marker-end': 'url(#mmA)', class: 'dg-edge'}));
+      if (l.rel) {
+        const s = cutS(l.rel, 8), w = tw(s, 11) + 12, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        labels.append(sv('rect', {x: mx - w / 2, y: my - 10, width: w, height: 20, rx: 10, fill: '#0c1620', stroke: '#f5c26b', 'stroke-opacity': .6}));
+        labels.append(sv('text', {x: mx, y: my + 4, 'font-size': 11, fill: '#f5c26b', 'text-anchor': 'middle', 'font-family': SANS}, s));
+      }
+    }
+    names.forEach((n, i) => {
+      const [x, y0] = pos[i], col = HUES[i % HUES.length], ls = wrapT(n, 13, nw - 14, 2);
+      nodes.append(sv('rect', {x: x - nw / 2, y: y0 - nh / 2, width: nw, height: nh, rx: 12, fill: '#15232e', stroke: col, 'stroke-width': 1.8, class: 'dg-node'}));
+      txt(nodes, '', x, y0 - (ls.length > 1 ? 18 : 10), {fs: 13, bold: true, lines: ls, anchor: 'middle', fill: col, lh: 16});
     });
-    root.append(flow);
-  } else if (kind === 'quotes') {
-    for (const q of o.quotes) { const f = el('figure', 'dg-quote'); f.append(el('blockquote', null, q.t)); if (q.src) f.append(el('figcaption', null, '— ' + q.src)); root.append(f); }
-  } else if (kind === 'actionplan') {
+    svg.append(edges, nodes, labels);
+    y = cy + R * .82 + nh / 2 + 24;
+    const defs = o.groups.filter(g => g.desc);
+    if (defs.length) {
+      svg.append(sv('line', {x1: IP, y1: y, x2: IW - IP, y2: y, stroke: 'rgba(255,255,255,.15)'})); y += 12;
+      defs.forEach((g, i) => { const col = HUES[names.indexOf(g.name) % HUES.length] || '#6fd0c0';
+        svg.append(sv('rect', {x: IP, y: y + 4, width: 8, height: 8, rx: 2, fill: col}));
+        y += txt(svg, g.name + '：' + g.desc, IP + 16, y, {fs: 13, w: IW - IP * 2 - 16, fill: '#c3cfd1'}) + 6; });
+    }
+    return y + 16;
+  },
+  chaptermap(svg, o, bk){
+    const c = {title: '#e8eef0', sub: '#9fb0b4'};
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#101a24'}));
+    arrowDefs(svg, 'cmA', '#6fd0c0');
+    let y = header(svg, o, bk, 22, c);
+    const bx = IP + 56, bw = IW - bx - IP;
+    o.groups.forEach((g, i) => {
+      const col = HUES[i % HUES.length];
+      if (i) {
+        const l = o.links.find(x => x.b === g.name || (x.b && g.name.includes(x.b))), lab = l && l.rel ? l.rel : '';
+        const gh = Math.max(34, lab ? hOf(lab, 12, bw - 20) + 14 : 0);
+        svg.append(sv('line', {x1: IP + 20, y1: y - 6, x2: IP + 20, y2: y + gh - 6, stroke: '#6fd0c0', 'stroke-width': 2, 'marker-end': 'url(#cmA)'}));
+        if (lab) txt(svg, '承接：' + lab, bx, y + 2, {fs: 12, w: bw - 20, fill: '#6fd0c0'});
+        y += gh;
+      }
+      const h = 20 + hOf(g.name, 16, bw - 28, null, 2) + (g.desc ? hOf(g.desc, 13, bw - 28) + 4 : 0) + g.items.reduce((n, t) => n + hOf(t, 13, bw - 44) + 4, 0) + 10;
+      svg.append(sv('rect', {x: bx, y, width: bw, height: h, rx: 10, fill: 'rgba(255,255,255,.04)', stroke: col, 'stroke-opacity': .5}));
+      svg.append(sv('rect', {x: bx, y, width: 5, height: h, rx: 2, fill: col}));
+      svg.append(sv('circle', {cx: IP + 20, cy: y + 22, r: 18, fill: col}));
+      svg.append(sv('text', {x: IP + 20, y: y + 28, 'font-size': 15, 'font-weight': 700, fill: '#101a24', 'text-anchor': 'middle', 'font-family': SANS}, String(i + 1)));
+      let yy = y + 10;
+      yy += txt(svg, g.name || '第 ' + (i + 1) + ' 部分', bx + 16, yy, {fs: 16, bold: true, w: bw - 28, max: 2, fill: col}) + 4;
+      if (g.desc) yy += txt(svg, g.desc, bx + 16, yy, {fs: 13, w: bw - 28, fill: '#c3cfd1'}) + 4;
+      for (const t of g.items) { svg.append(sv('circle', {cx: bx + 22, cy: yy + 8, r: 2.5, fill: col})); yy += txt(svg, t, bx + 30, yy, {fs: 13, w: bw - 44}) + 4; }
+      y += h + 6;
+    });
+    return y + 16;
+  },
+  themes(svg, o, bk){
+    const c = {title: '#e8eef0', sub: '#9fb0b4'};
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#121722'}));
+    let y = header(svg, o, bk, 22, c);
+    const pw = 190, ix = IP + pw + 46, iw = IW - ix - IP;
+    o.groups.forEach((g, i) => {
+      const col = HUES[i % HUES.length];
+      const ph = 22 + hOf(g.name, 16, pw - 24, null, 3) + (g.desc ? hOf(g.desc, 12, pw - 24) + 6 : 0);
+      const ihs = g.items.map(t => hOf(t, 13, iw - 20) + 14), ih = ihs.reduce((a, b) => a + b + 8, 0) - 8;
+      const bh = Math.max(ph, ih), py = y + (bh - ph) / 2;
+      svg.append(sv('rect', {x: IP, y: py, width: pw, height: ph, rx: 16, fill: col}));
+      let yy = py + 11;
+      yy += txt(svg, g.name, IP + 12, yy, {fs: 16, bold: true, w: pw - 24, max: 3, fill: '#121722'}) + 6;
+      if (g.desc) txt(svg, g.desc, IP + 12, yy, {fs: 12, w: pw - 24, fill: '#1e2633'});
+      let iy = y + (bh - ih) / 2;
+      g.items.forEach((t, k) => {
+        const h = ihs[k], my = iy + h / 2;
+        svg.append(sv('path', {d: 'M' + (IP + pw) + ',' + (py + ph / 2) + ' C' + (IP + pw + 30) + ',' + (py + ph / 2) + ' ' + (ix - 30) + ',' + my + ' ' + ix + ',' + my, fill: 'none', stroke: col, 'stroke-width': 1.6, 'stroke-opacity': .8}));
+        svg.append(sv('rect', {x: ix, y: iy, width: iw, height: h, rx: 8, fill: 'rgba(255,255,255,.05)', stroke: col, 'stroke-opacity': .5}));
+        txt(svg, t, ix + 10, iy + 7, {fs: 13, w: iw - 20});
+        iy += h + 8;
+      });
+      y += bh + 26;
+    });
+    return y;
+  },
+  quotes(svg, o, bk){
+    const d = sv('defs'), lg = sv('linearGradient', {id: 'qtG', x1: 0, y1: 0, x2: 1, y2: 1});
+    lg.append(sv('stop', {offset: '0', 'stop-color': '#0d1a24'}), sv('stop', {offset: '1', 'stop-color': '#1d3b3c'})); d.append(lg); svg.append(d);
+    svg.append(sv('rect', {width: IW, height: 9999, fill: 'url(#qtG)'}));
+    svg.append(sv('text', {x: IW / 2, y: 92, 'font-size': 120, fill: '#6fd0c0', 'fill-opacity': .18, 'text-anchor': 'middle', 'font-family': 'Georgia,serif'}, '“'));
+    let y = 48;
+    y += txt(svg, o.title || '《' + bk + '》金句', IW / 2, y, {fs: 26, bold: true, w: IW - 120, anchor: 'middle', fill: '#f5c26b'});
+    y += txt(svg, '《' + bk + '》', IW / 2, y + 6, {fs: 13, w: IW - 120, anchor: 'middle', fill: '#9fb0b4'}) + 30;
+    o.quotes.forEach((q, i) => {
+      if (i) { svg.append(sv('path', {d: 'M' + (IW / 2 - 5) + ',' + y + ' l5,-5 l5,5 l-5,5z', fill: '#6fd0c0', 'fill-opacity': .7})); y += 24; }
+      y += txt(svg, q.t, IW / 2, y, {fs: i % 3 === 0 ? 24 : 20, bold: true, w: IW - 110, anchor: 'middle', fill: i % 2 ? '#e8eef0' : '#6fd0c0', lh: (i % 3 === 0 ? 24 : 20) * 1.4}) + 4;
+      if (q.src) y += txt(svg, '— ' + q.src, IW / 2, y + 2, {fs: 12, w: IW - 110, anchor: 'middle', fill: '#9fb0b4'}) + 6;
+      y += 18;
+    });
+    return y + 30;
+  },
+  handwritten(svg, o, bk){
+    const H = 30, f = HAND;
+    const grp = sv('g'); svg.append(sv('rect', {width: IW, height: 9999, fill: '#fbf5e3'}), grp);
+    let y = 34;
+    const lines = sv('g'); grp.append(lines);
+    const body = sv('g'); grp.append(body);
+    const t = o.title || bk;
+    y += txt(body, t, 74, y, {fs: 26, bold: true, w: IW - 110, fill: '#1d4f91', font: f, lh: H});
+    body.append(sv('path', {d: 'M74,' + (y + 2) + ' q20,-6 40,0 t40,0 t40,0 t40,0', fill: 'none', stroke: '#e0565b', 'stroke-width': 2}));
+    y += H - 6;
+    for (const g of o.groups) {
+      if (g.name) {
+        const w = Math.min(tw(g.name, 19) + 14, IW - 110);
+        body.append(sv('rect', {x: 70, y: y + 6, width: w, height: 20, fill: '#fff07a', 'fill-opacity': .75, rx: 3, transform: 'rotate(-0.8 70 ' + y + ')'}));
+        y += txt(body, g.name, 76, y, {fs: 19, bold: true, w: IW - 110, fill: '#24324a', font: f, lh: H}) + (H - 25);
+      }
+      if (g.desc) y += txt(body, g.desc, 76, y, {fs: 15, w: IW - 110, fill: '#5a6475', font: f, lh: H}) + (H - 20);
+      for (const it of g.items) {
+        const hot = /^重要[!！]/.test(it), warn = /^小心[:：]/.test(it);
+        const h = txt(body, '→ ' + it, 82, y, {fs: 17, w: IW - 120, fill: hot ? '#c0392b' : warn ? '#b9770e' : '#24324a', font: f, lh: H});
+        if (hot) body.append(sv('rect', {x: 78, y: y - 2, width: Math.min(tw('→ ' + it, 17) + 10, IW - 110), height: h + 6, rx: 12, fill: 'none', stroke: '#c0392b', 'stroke-width': 1.4, 'stroke-dasharray': '6 3'}));
+        y += h + (H - 22);
+      }
+      y += H / 2;
+    }
+    const end = Math.ceil((y + 20) / H) * H;
+    for (let ly = 52; ly < end; ly += H) lines.append(sv('line', {x1: 0, y1: ly, x2: IW, y2: ly, stroke: '#c9d6e8', 'stroke-width': 1}));
+    lines.append(sv('line', {x1: 62, y1: 0, x2: 62, y2: end, stroke: '#e59a9a', 'stroke-width': 1.5}));
+    for (let hy = 40; hy < end; hy += 70) lines.append(sv('circle', {cx: 26, cy: hy, r: 8, fill: '#e9e1c9', stroke: '#d8cfb4'}));
+    return end;
+  },
+  blueprint(svg, o, bk){
+    const d = sv('defs'), pt = sv('pattern', {id: 'bpG', width: 20, height: 20, patternUnits: 'userSpaceOnUse'});
+    pt.append(sv('path', {d: 'M20 0H0V20', fill: 'none', stroke: 'rgba(255,255,255,.1)'})); d.append(pt); svg.append(d);
+    arrowDefs(svg, 'bpA', '#ffffff');
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#0d3b6e'}), sv('rect', {width: IW, height: 9999, fill: 'url(#bpG)'}));
+    const c = {title: '#ffffff', sub: '#a9c7ea', font: MONO};
+    let y = header(svg, o, bk, 26, c);
+    svg.append(sv('line', {x1: IP, y1: y - 8, x2: IW - IP, y2: y - 8, stroke: '#fff', 'stroke-opacity': .6}));
+    const bw = IW - IP * 2 - 40, bx = IP + 20;
+    o.groups.forEach((g, i) => {
+      if (i) {
+        const l = o.links.find(x => g.name && (x.b === g.name || g.name.includes(x.b)));
+        svg.append(sv('line', {x1: IW / 2, y1: y, x2: IW / 2, y2: y + 30, stroke: '#fff', 'stroke-width': 1.5, 'marker-end': 'url(#bpA)'}));
+        if (l && l.rel) svg.append(sv('text', {x: IW / 2 + 10, y: y + 20, 'font-size': 11, fill: '#a9c7ea', 'font-family': MONO}, cutS(l.rel, 20)));
+        y += 34;
+      }
+      const h = 16 + hOf(g.name + (g.desc ? '｜' + g.desc : ''), 14, bw - 30) + g.items.reduce((n, t) => n + hOf(t, 13, bw - 50) + 4, 0) + 12;
+      svg.append(sv('rect', {x: bx, y, width: bw, height: h, fill: 'rgba(13,59,110,.85)', stroke: '#fff', 'stroke-width': 1.3, 'stroke-dasharray': '6 4'}));
+      svg.append(sv('line', {x1: bx - 14, y1: y, x2: bx - 14, y2: y + h, stroke: '#a9c7ea', 'stroke-width': 1}),
+        sv('line', {x1: bx - 18, y1: y, x2: bx - 10, y2: y, stroke: '#a9c7ea'}), sv('line', {x1: bx - 18, y1: y + h, x2: bx - 10, y2: y + h, stroke: '#a9c7ea'}));
+      svg.append(sv('text', {x: bx + bw - 6, y: y + 14, 'font-size': 10, fill: '#a9c7ea', 'text-anchor': 'end', 'font-family': MONO}, 'P-' + String(i + 1).padStart(2, '0')));
+      let yy = y + 8;
+      yy += txt(svg, g.name + (g.desc ? '｜' + g.desc : ''), bx + 12, yy, {fs: 14, bold: true, w: bw - 30, fill: '#fff', font: MONO}) + 4;
+      for (const t of g.items) { svg.append(sv('rect', {x: bx + 16, y: yy + 5, width: 6, height: 6, fill: 'none', stroke: '#fff'})); yy += txt(svg, t, bx + 30, yy, {fs: 13, w: bw - 50, fill: '#e6f1ff', font: MONO}) + 4; }
+      y += h;
+    });
+    y += 24;
+    const tbw = 260, tbx = IW - IP - tbw;
+    svg.append(sv('rect', {x: tbx, y, width: tbw, height: 66, fill: 'none', stroke: '#fff'}),
+      sv('line', {x1: tbx, y1: y + 22, x2: tbx + tbw, y2: y + 22, stroke: '#fff'}), sv('line', {x1: tbx, y1: y + 44, x2: tbx + tbw, y2: y + 44, stroke: '#fff'}));
+    for (const [k, v, i] of [['圖名', '全書結構藍圖', 0], ['書名', cutS(bk, 14), 1], ['日期', dateVal(Date.now()), 2]])
+      svg.append(sv('text', {x: tbx + 8, y: y + 15 + i * 22, 'font-size': 11, fill: '#fff', 'font-family': MONO}, k + '：' + v));
+    return y + 90;
+  },
+  timeline(svg, o, bk){
+    const c = {title: '#e8eef0', sub: '#9fb0b4'};
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#0e1822'}));
+    arrowDefs(svg, 'tlA', '#6fd0c0');
+    let y = header(svg, o, bk, 22, c);
+    const ax = IP + 22, cx = ax + 30, cw = IW - cx - IP, y0 = y;
+    const axis = sv('line', {x1: ax, y1: y0, x2: ax, y2: y0, stroke: '#6fd0c0', 'stroke-width': 3, 'marker-end': 'url(#tlA)'}); svg.append(axis);
+    o.groups.forEach((g, i) => {
+      const col = HUES[i % HUES.length];
+      const h = 14 + hOf(g.name, 16, cw - 24, null, 2) + (g.desc ? hOf(g.desc, 13, cw - 24) + 4 : 0) + g.items.reduce((n, t) => n + hOf(t, 13, cw - 24) + 4, 0) + 8;
+      svg.append(sv('circle', {cx: ax, cy: y + 18, r: 9, fill: col, stroke: '#0e1822', 'stroke-width': 3}));
+      svg.append(sv('line', {x1: ax + 10, y1: y + 18, x2: cx, y2: y + 18, stroke: col, 'stroke-width': 1.5}));
+      svg.append(sv('rect', {x: cx, y, width: cw, height: h, rx: 10, fill: 'rgba(255,255,255,.045)', stroke: col, 'stroke-opacity': .45}));
+      let yy = y + 8;
+      yy += txt(svg, g.name, cx + 12, yy, {fs: 16, bold: true, w: cw - 24, max: 2, fill: col}) + 4;
+      if (g.desc) yy += txt(svg, g.desc, cx + 12, yy, {fs: 13, w: cw - 24, fill: '#c3cfd1'}) + 4;
+      for (const t of g.items) yy += txt(svg, '· ' + t, cx + 12, yy, {fs: 13, w: cw - 24}) + 4;
+      y += h + 18;
+    });
+    axis.setAttribute('y2', y);
+    return y + 24;
+  },
+  actionplan(svg, o, bk, doc){
     const done = new Set(Array.isArray(doc && doc.done) ? doc.done : []);
+    svg.append(sv('rect', {width: IW, height: 9999, fill: '#2b3a46'}));
+    const px = 22, pw = IW - px * 2;
+    const paper = sv('rect', {x: px, y: 30, width: pw, height: 100, rx: 10, fill: '#f7f9fb'}); svg.append(paper);
+    svg.append(sv('rect', {x: IW / 2 - 60, y: 16, width: 120, height: 30, rx: 8, fill: '#8a97a3'}), sv('rect', {x: IW / 2 - 40, y: 24, width: 80, height: 14, rx: 7, fill: '#2b3a46'}));
+    let y = 62;
+    const c = {title: '#1b2733', sub: '#6b7884'};
+    y += txt(svg, o.title || '行動清單', px + 24, y, {fs: 24, bold: true, w: pw - 48, fill: c.title});
+    y += 4 + txt(svg, '《' + bk + '》· 勾選會儲存', px + 24, y, {fs: 12, w: pw - 48, fill: c.sub}) + 14;
     const groups = o.groups.filter(g => g.todos.length), loose = o.todos.filter(t => !t.group);
     if (loose.length) groups.push({name: '', todos: loose});
     let idx = 0;
-    for (const g of groups) {
-      const b = el('div', 'dg-box'); if (g.name) b.append(el('h4', null, g.name));
+    groups.forEach((g, gi) => {
+      const col = ['#16a085', '#d68910', '#c0392b', '#2e86c1'][gi % 4];
+      if (g.name) { svg.append(sv('rect', {x: px + 24, y: y + 2, width: 5, height: 20, rx: 2, fill: col})); y += txt(svg, g.name, px + 36, y, {fs: 17, bold: true, w: pw - 60, fill: col}) + 8; }
       for (const t of g.todos) {
-        const i = idx++, lab = el('label', 'check dg-todo'), cb = el('input'); cb.type = 'checkbox'; cb.checked = done.has(i);
-        const sp = el('span'); sp.append(el('span', null, t.t)); if (t.how) sp.append(el('small', null, '完成標準：' + t.how));
-        cb.onchange = async () => {
-          if (cb.checked) done.add(i); else done.delete(i);
-          if (doc && S.db) try { await S.db.doc('digests/' + doc.id).update({done: [...done].sort((a, b) => a - b), updatedAt: Date.now()}); } catch (e) {}
-        };
-        lab.append(cb, sp); b.append(lab);
+        const i = idx++, on = done.has(i), row = sv('g', {class: 'dg-ck', 'data-i': i, role: 'checkbox', 'aria-checked': on ? 'true' : 'false', tabindex: 0, style: 'cursor:pointer'});
+        const hh = hOf(t.t, 15, pw - 90) + (t.how ? hOf('完成標準：' + t.how, 12, pw - 90) + 2 : 0);
+        row.append(sv('rect', {x: px + 24, y: y - 4, width: pw - 48, height: hh + 10, fill: 'transparent'}));
+        row.append(sv('rect', {x: px + 26, y: y + 1, width: 20, height: 20, rx: 4, fill: on ? col : '#fff', stroke: col, 'stroke-width': 2}));
+        if (on) row.append(sv('path', {d: 'M' + (px + 30) + ',' + (y + 11) + ' l5,5 l8,-10', fill: 'none', stroke: '#fff', 'stroke-width': 2.6, 'stroke-linecap': 'round'}));
+        let yy = y + txt(row, t.t, px + 58, y, {fs: 15, w: pw - 90, fill: on ? '#97a3ad' : '#1b2733', strike: on});
+        if (t.how) yy += 2 + txt(row, '完成標準：' + t.how, px + 58, yy + 2, {fs: 12, w: pw - 90, fill: '#6b7884'});
+        svg.append(row);
+        y = yy + 12;
       }
-      root.append(b);
+      y += 8;
+    });
+    paper.setAttribute('height', y - 30 + 10);
+    return y + 30;
+  },
+  iceberg(svg, o, bk){
+    const d = sv('defs');
+    const g1 = sv('linearGradient', {id: 'ibSky', x1: 0, y1: 0, x2: 0, y2: 1}); g1.append(sv('stop', {offset: 0, 'stop-color': '#bfe4f5'}), sv('stop', {offset: 1, 'stop-color': '#e9f6fb'}));
+    const g2 = sv('linearGradient', {id: 'ibSea', x1: 0, y1: 0, x2: 0, y2: 1}); g2.append(sv('stop', {offset: 0, 'stop-color': '#1c6fa3'}), sv('stop', {offset: 1, 'stop-color': '#061a33'}));
+    const g3 = sv('linearGradient', {id: 'ibIce', x1: 0, y1: 0, x2: 0, y2: 1}); g3.append(sv('stop', {offset: 0, 'stop-color': '#d9f1fb'}), sv('stop', {offset: 1, 'stop-color': '#7fb8d6'}));
+    d.append(g1, g2, g3); svg.append(d);
+    const sky = sv('rect', {width: IW, height: 100, fill: 'url(#ibSky)'}), sea = sv('rect', {width: IW, height: 9999, fill: 'url(#ibSea)'});
+    svg.append(sea, sky);
+    let y = 22;
+    y += txt(svg, o.title || '《' + bk + '》冰山圖', IP, y, {fs: 22, bold: true, w: IW - IP * 2, fill: '#0b2f4a'}) + 10;
+    const tipW = 180, tx = IW - IP - tipW, aw = tx - IP - 20, top = y;
+    svg.append(sv('text', {x: IP, y: y + 12, 'font-size': 12, 'font-weight': 700, fill: '#1c6fa3', 'font-family': SANS}, '水面上：看得見的'));
+    y += 22;
+    for (const t of o.above) { svg.append(sv('circle', {cx: IP + 5, cy: y + 9, r: 4, fill: '#1c6fa3'})); y += txt(svg, t, IP + 16, y, {fs: 14, w: aw - 16, fill: '#0b2f4a'}) + 8; }
+    const wl = Math.max(y + 16, top + 150);
+    sky.setAttribute('height', wl);
+    svg.append(sv('path', {d: 'M' + (tx + 20) + ',' + wl + ' L' + (tx + 70) + ',' + (top + 10) + ' L' + (tx + 100) + ',' + (top + 40) + ' L' + (tx + 125) + ',' + (top + 22) + ' L' + (tx + tipW - 10) + ',' + wl + 'Z', fill: 'url(#ibIce)', stroke: '#ffffff', 'stroke-width': 2}));
+    svg.append(sv('path', {d: 'M' + (tx + 70) + ',' + (top + 10) + ' L' + (tx + 82) + ',' + wl + ' L' + (tx + 20) + ',' + wl + 'Z', fill: '#ffffff', 'fill-opacity': .45}));
+    let by = wl + 40;
+    const iw = IW - IP * 2 - 60, ix = IP + 50;
+    const items = sv('g'); let iy = by + 18;
+    items.append(sv('text', {x: ix + 10, y: iy, 'font-size': 12, 'font-weight': 700, fill: '#0b4a75', 'font-family': SANS}, '水面下：深層意義、原因、假設'));
+    iy += 12;
+    for (const b of o.below) {
+      iy += txt(items, b.t, ix + 22, iy, {fs: 14, w: iw - 40, fill: '#062a45', bold: true});
+      if (b.ref) iy += txt(items, '↑ 對應：' + b.ref, ix + 22, iy + 2, {fs: 11, w: iw - 40, fill: '#1c5f8a'}) + 2;
+      iy += 10;
     }
-  } else if (kind === 'iceberg') {
-    const up = el('div', 'dg-above'), down = el('div', 'dg-below');
-    up.append(el('p', 'dg-zone', '水面上：表面'));
-    for (const t of o.above) up.append(el('p', 'dg-ice', t));
-    down.append(el('p', 'dg-zone', '水面下：深層'));
-    for (const b of o.below) { const p = el('p', 'dg-ice', b.t); if (b.ref) p.append(el('small', null, '對應：' + b.ref.replace(/^對應[:：\s]*/, ''))); down.append(p); }
-    root.append(up, el('div', 'dg-water'), down);
-  } else {
-    const g = el('div', 'dg-grid'); for (const x of o.groups) g.append(groupBox(x)); root.append(g);
-    if (o.links.length) root.append(linkList(o));
+    const bot = iy + 30;
+    svg.append(sv('path', {d: 'M' + (tx + 20) + ',' + wl + ' L' + (IP + 10) + ',' + (by + 10) + ' L' + IP + ',' + (bot - 40) + ' L' + (IW / 2 - 40) + ',' + bot + ' L' + (IW - IP) + ',' + (bot - 60) + ' L' + (IW - IP + 6) + ',' + (by + 30) + ' L' + (tx + tipW - 10) + ',' + wl + 'Z', fill: 'url(#ibIce)', 'fill-opacity': .92}));
+    svg.append(items);
+    let wave = 'M0,' + wl; for (let x = 0; x < IW; x += 20) wave += ' q5,-5 10,0 t10,0'; svg.append(sv('path', {d: wave, fill: 'none', stroke: '#ffffff', 'stroke-width': 2}));
+    return bot + 30;
   }
-  return root;
+};
+const cutS = (s, n) => [...String(s)].length > n ? [...String(s)].slice(0, n - 1).join('') + '…' : String(s);
+function drawDigest(kind, o, bk, doc){
+  const svg = sv('svg', {xmlns: SVGNS, viewBox: '0 0 ' + IW + ' 600', width: IW, class: 'dg-img dg-' + kind, role: 'img', 'aria-label': (DGK[kind] ? DGK[kind][1] : '') + '：' + bk, 'font-family': SANS});
+  const h = Math.ceil(DRAW[kind](svg, o, bk, doc));
+  svg.setAttribute('viewBox', '0 0 ' + IW + ' ' + h); svg.setAttribute('height', h);
+  for (const r of svg.querySelectorAll('rect[height="9999"]')) r.setAttribute('height', h);
+  return svg;
 }
-function digestPanel(bk){
-  const st = S.dig[bk];
-  const box = el('div', 'card dg-panel'), top = el('div', 'row');
-  const sel = el('select'); sel.setAttribute('aria-label', '整理版式');
-  for (const d of DG) sel.append(new Option('/' + d[0] + '　' + d[1], d[0]));
-  sel.value = st.kind; sel.style.width = 'auto'; sel.style.flex = '1';
-  sel.onchange = () => { st.kind = sel.value; st.paste = null; renderRecords(); };
-  const doc = S.digests.find(x => x.id === dgId(bk, st.kind)), busy = S.digBusy === bk;
-  const go = btn(doc ? '重新生成' : '生成', 'primary'); go.disabled = !!S.digBusy;
-  top.append(sel, go); box.append(top);
-  box.append(el('p', 'msg', DGK[st.kind][2] + '。只用這本書已存的 ' + S.entries.filter(e => bookOf(e) === bk).length + ' 條記錄；未讀的部分不會出現。'));
-  const live = el('p', 'answer dg-live'); live.hidden = !busy; if (busy) live.textContent = st.live || '整理中…通常需要半分鐘至兩分鐘。';
-  const sayP = el('p', 'msg'); sayP.hidden = !st.err; sayP.textContent = st.err || '';
-  box.append(live, sayP);
+async function svgPng(svg){
+  const s = new XMLSerializer().serializeToString(svg), w = +svg.getAttribute('width'), h = +svg.getAttribute('height');
+  const u = URL.createObjectURL(new Blob([s], {type: 'image/svg+xml'}));
+  try {
+    const img = new Image(); img.src = u; await img.decode();
+    const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(r, 'image/png'));
+  } finally { URL.revokeObjectURL(u); }
+}
+function digestSlide(bk, kind, st){
+  const d = DGK[kind], doc = S.digests.find(x => x.id === dgId(bk, kind)), busy = S.digBusy === bk + '|' + kind;
+  const sl = el('section', 'dg-slide'); sl.dataset.kind = kind; sl.setAttribute('aria-label', d[1]);
+  const head = el('div', 'dg-shead'), ttl = el('div');
+  ttl.append(el('h4', null, '/' + kind + '　' + d[1]), el('p', 'msg', d[2]));
+  const acts = el('div', 'row'), go = btn(doc ? '重新生成' : '生成', 'primary'); go.disabled = !!S.digBusy;
+  acts.append(go); head.append(ttl, acts); sl.append(head);
   const save = async text => {
-    if (parseDigest(text).empty) return false;
-    await S.db.doc('digests/' + dgId(bk, st.kind)).set({bookTitle: bk, kind: st.kind, text: text.trim(), done: [], createdAt: doc ? doc.createdAt || Date.now() : Date.now(), updatedAt: Date.now()});
+    if (parseDigest(text, kind).empty) return false;
+    await S.db.doc('digests/' + dgId(bk, kind)).set({bookTitle: bk, kind, text: text.trim(), done: [], createdAt: doc ? doc.createdAt || Date.now() : Date.now(), updatedAt: Date.now()});
     return true;
   };
   go.onclick = async () => {
     if (!S.db || S.digBusy) return;
-    const prompt = digestPrompt(bk, st.kind); st.err = '';
+    const prompt = digestPrompt(bk, kind); st.err = ''; st.kind = kind;
     if (!S.sample) {
       let copied = false;
       try { await navigator.clipboard.writeText(prompt); copied = true; } catch (e) {}
-      Object.assign(st, {paste: '', prompt, copied}); renderRecords(); return;
+      Object.assign(st, {paste: '', pasteKind: kind, prompt, copied}); renderRecords(); return;
     }
-    S.digBusy = bk; st.live = ''; renderRecords();
+    S.digBusy = bk + '|' + kind; st.live = ''; renderRecords();
     try {
       const r = await S.sample(prompt, {onText: ({text}) => { st.live = text; const q = $('records').querySelector('.dg-live'); if (q) q.textContent = text; }});
-      if (!(await save(r.text))) st.err = '答覆不符合格式，未儲存，請再試。';
+      if (!(await save(r.text))) { st.err = '答覆不符合格式，未儲存，請再試。'; st.bad = r.text; }
     } catch (e) { st.err = errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + '）'; }
     S.digBusy = null; renderRecords();
   };
-  if (st.paste != null) {
+  if (busy) { const p = el('p', 'answer dg-live', st.live || '整理中…通常需要半分鐘至兩分鐘。'); sl.append(p); return sl; }
+  if (st.err && st.kind === kind) {
+    sl.append(el('p', 'msg dg-err', st.err));
+    if (st.bad) { const dd = el('details', 'opt'); dd.append(el('summary', null, '看 AI 的原文'), el('p', 'answer', st.bad)); sl.append(dd); }
+  }
+  if (st.paste != null && st.pasteKind === kind) {
     const f = el('div', 'vform');
     f.append(el('p', 'msg', st.copied ? '已複製提問文字。到 Claude 貼上取得答覆，再貼回下面。' : '未能自動複製：請複製下面的提問文字，到 Claude 取得答覆。'));
     if (!st.copied) { const pr = el('textarea'); pr.readOnly = true; pr.value = st.prompt || ''; pr.setAttribute('aria-label', '提問文字'); f.append(pr); }
@@ -1172,18 +1432,61 @@ function digestPanel(bk){
     cancel.onclick = () => { st.paste = null; renderRecords(); };
     ok.onclick = async () => {
       ok.disabled = true;
-      try { if (await save(ta.value)) { st.paste = null; st.err = ''; } else { st.err = '答覆不符合格式，未儲存。'; ok.disabled = false; } }
-      catch (e) { st.err = '未能儲存，請再試。'; ok.disabled = false; }
+      try { if (await save(ta.value)) { st.paste = null; st.err = ''; } else { st.err = '答覆不符合格式，未儲存。'; st.bad = ta.value; st.kind = kind; } }
+      catch (e) { st.err = '未能儲存，請再試。'; st.kind = kind; }
       renderRecords();
     };
-    row.append(ok, cancel); f.append(ta, row); box.append(f);
+    row.append(ok, cancel); f.append(ta, row); sl.append(f);
   }
-  if (doc && !busy) {
-    box.append(el('p', 'time', '生成於 ' + fmt(doc.updatedAt || doc.createdAt)), renderDigest(st.kind, parseDigest(doc.text), doc));
-    const del = btn('刪除這份整理', 'danger'); del.style.alignSelf = 'flex-start';
-    confirmBtn(del, '刪除這份整理', () => S.db.doc('digests/' + doc.id).delete());
-    box.append(del);
+  if (!doc) { if (st.paste == null || st.pasteKind !== kind) sl.append(el('p', 'msg dg-empty', '未生成。按「生成」，AI 只用這本書已存的 ' + S.entries.filter(e => bookOf(e) === bk).length + ' 條記錄畫成一張圖；未讀的部分不會出現。')); return sl; }
+  const svg = drawDigest(kind, parseDigest(doc.text, kind), bk, doc), fig = el('figure', 'dg-fig');
+  if (kind === 'actionplan') {
+    const toggle = async g => {
+      const i = +g.dataset.i, done = new Set(Array.isArray(doc.done) ? doc.done : []);
+      if (done.has(i)) done.delete(i); else done.add(i);
+      doc.done = [...done].sort((a, b) => a - b);
+      try { await S.db.doc('digests/' + doc.id).update({done: doc.done, updatedAt: Date.now()}); } catch (e) {}
+    };
+    svg.addEventListener('click', ev => { const g = ev.target.closest('.dg-ck'); if (g) toggle(g); });
+    svg.addEventListener('keydown', ev => { const g = ev.target.closest && ev.target.closest('.dg-ck'); if (g && (ev.key === ' ' || ev.key === 'Enter')) { ev.preventDefault(); toggle(g); } });
   }
+  fig.append(svg); sl.append(fig);
+  const foot = el('div', 'row'); foot.append(el('span', 'time', '生成於 ' + fmt(doc.updatedAt || doc.createdAt)));
+  const spacer = el('span', 'spacer'); foot.append(spacer);
+  if (S.local) {
+    const dl = btn('下載圖片');
+    dl.onclick = async () => {
+      try { const b = await svgPng(svg), u = URL.createObjectURL(b), a = el('a'); a.href = u; a.download = bk + '-' + d[1] + '.png'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 10000); }
+      catch (e) { dl.textContent = '未能下載'; }
+    };
+    foot.append(dl);
+  }
+  const del = btn('刪除', 'danger'); confirmBtn(del, '刪除', () => S.db.doc('digests/' + doc.id).delete()); foot.append(del);
+  sl.append(foot);
+  return sl;
+}
+function digestPanel(bk){
+  const st = S.dig[bk], box = el('div', 'card dg-panel');
+  const chips = el('div', 'dg-chips'), gal = el('div', 'dg-gal'), nav = el('div', 'row dg-nav');
+  chips.setAttribute('role', 'tablist'); chips.setAttribute('aria-label', '整理版式');
+  gal.tabIndex = 0; gal.setAttribute('aria-label', '整理圖：左右掃動或按方向鍵');
+  const idx = () => Math.max(0, DG.findIndex(x => x[0] === st.kind));
+  const mark = () => { [...chips.children].forEach((c, i) => { const on = i === idx(); c.classList.toggle('on', on); c.setAttribute('aria-selected', on ? 'true' : 'false'); if (on) c.scrollIntoView({block: 'nearest', inline: 'nearest'}); }); };
+  const go = (i, smooth) => { i = Math.max(0, Math.min(DG.length - 1, i)); st.kind = DG[i][0]; mark(); gal.scrollTo({left: i * gal.clientWidth, behavior: smooth ? 'smooth' : 'auto'}); };
+  DG.forEach((d, i) => {
+    const has = S.digests.some(x => x.id === dgId(bk, d[0])), c = el('button', 'dg-chip' + (has ? ' has' : ''), (has ? '✓ ' : '') + d[1]);
+    c.type = 'button'; c.setAttribute('role', 'tab'); c.title = '/' + d[0]; c.onclick = () => go(i, true); chips.append(c);
+    gal.append(digestSlide(bk, d[0], st));
+  });
+  let t = null;
+  gal.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => { const i = Math.round(gal.scrollLeft / (gal.clientWidth || 1)); if (DG[i] && DG[i][0] !== st.kind) { st.kind = DG[i][0]; mark(); } }, 90); });
+  gal.addEventListener('keydown', ev => { if (ev.target !== gal) return; if (ev.key === 'ArrowRight') { ev.preventDefault(); go(idx() + 1, true); } else if (ev.key === 'ArrowLeft') { ev.preventDefault(); go(idx() - 1, true); } });
+  const prev = btn('‹ 上一個'), next = btn('下一個 ›'), pos = el('span', 'msg');
+  prev.onclick = () => go(idx() - 1, true); next.onclick = () => go(idx() + 1, true);
+  nav.append(prev, pos, next);
+  pos.textContent = '左右掃動切換版式'; pos.style.flex = '1'; pos.style.textAlign = 'center';
+  box.append(chips, gal, nav);
+  requestAnimationFrame(() => go(idx(), false));
   return box;
 }
 
@@ -1800,6 +2103,7 @@ async function start(){
   }, () => {});
 }
 window.addEventListener('hashchange', route);
+if (window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--tabs-h', ($('tabLog').parentElement.offsetHeight + 4) + 'px')).observe($('tabLog').parentElement);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderCards(); renderComposer(); renderFlip(); } });
 if (!load('reading-log:migrated')) { const old = load('draft-note'); if (old && !load(DRAFT_KEY)) store(DRAFT_KEY, old); store('reading-log:migrated', '1'); }
 $('note').value = load(DRAFT_KEY);
