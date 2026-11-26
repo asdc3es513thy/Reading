@@ -1,6 +1,6 @@
 # 睇書記錄：方法全文
 
-> 由 `src/reading-log.src.html` 的「方法全文」分頁自動產生（`build.py`），請勿手改。版本 2026-11-26 · eb56e71。
+> 由 `src/reading-log.src.html` 的「方法全文」分頁自動產生（`build.py`），請勿手改。版本 2026-11-26 · 1602bfd。
 
 ## 睇書作為自主路徑進步迴路
 
