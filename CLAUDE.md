@@ -19,6 +19,8 @@
 5. GitHub 版：在分支 commit `src/`、`index.html`、`METHOD.md` 及相關檔案，推送後由用戶合併到 `main`。不能推送時，把 `index.html` 等檔案交給用戶在 GitHub 網頁上載。
    - commit 作者要用用戶的 GitHub 帳戶（`asdc3es513thy <322116925+asdc3es513thy@users.noreply.github.com>`，`git config user.name／user.email`），否則 Vercel 免費版會擋住自動部署；Claude 以 `Co-Authored-By` 註明。不要用用戶的私人電郵。
 6. 兩邊頁底的版本號必須相同。
+7. 自動協作：用戶帶來其他 AI 的檔案或報告，或要求更新時，Claude 直接完成以上 1–6，推送分支後用 `gh api repos/asdc3es513thy/reading/pulls` 開 PR，只回覆 PR 連結；不要叫用戶手動上載檔案。用戶合併後，確認 `main` 已更新。
+8. 同步 claude.ai Reading Project：合併後用 Projects 工具覆寫同名文件（`reading-log (1).html` ← `index.html`，`ask (6).js`、`README (6).md`、`METHOD (6).md`、`CLAUDE (6).md`、`WORKFLOW (6).md`、`package (6).json`、`vercel (6).json`），內容沒有改的不要重寫。
 
 ## 用戶已定案、不可自行改動
 
