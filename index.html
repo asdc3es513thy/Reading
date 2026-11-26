@@ -188,6 +188,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
       </details>
       <label class="f" id="passWrap" hidden>通行碼（Vercel 設定的 APP_PASSCODE，只存在這部裝置）<input type="password" id="pass" autocomplete="off" maxlength="200"></label>
       <label class="check"><input type="checkbox" id="calm"><span id="calmLabel">這次閱讀前有入定</span></label>
+      <label class="check" id="autoDgWrap" hidden><input type="checkbox" id="autoDg" checked autocomplete="off"><span>篩書後自動生成十種視覺筆記</span></label>
       <p class="msg" id="gateMsg" hidden></p>
       <div class="row">
         <button class="primary" id="askBtn" type="submit">核對我的重述</button>
@@ -204,8 +205,9 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
     <datalist id="bookNames"></datalist>
 
     <section class="card" id="dgCard" hidden>
-      <h2>全書整理：十種版式</h2>
-      <p class="msg">揀一本書，再揀版式，按「生成」畫成一張圖。左右掃動切換版式。AI 只用這本書已存的重述和答覆；未讀的部分不會出現。</p>
+      <div class="row between"><h2>全書整理：十種版式</h2><button type="button" id="dgAllBtn" class="small primary" hidden>一鍵生成全部十種</button></div>
+      <p class="msg" id="dgAllSay" hidden></p>
+      <p class="msg">篩書時會自動生成十種版式；也可揀一本書，按「一鍵生成全部十種」補齊，或在單一版式按「生成」。左右掃動切換版式。AI 只用這本書已存的重述和答覆；未讀的部分不會出現。</p>
       <div class="dg-books" id="dgBooks" role="group" aria-label="揀書"></div>
       <div id="dgBox"></div>
     </section>
@@ -463,7 +465,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-26 · 43a0dbe · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-26 · 5997318 · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -479,7 +481,7 @@ const S = {entries: [], cards: [], sessions: [], flip: null, db: null, sample: n
   maxImg: 0, files: [], prevUrls: [], busy: false, ctl: null, open: {}, le: false, lc: false, ls: false,
   web: false, recsBusy: false, recsTried: false,
   goalLoaded: false, defsLoaded: false, calmTouched: false, form: null, cfBusy: false,
-  reveal: {}, rdraft: {}, vdraft: {}, paste: {}, digests: [], dig: {}, digBusy: null};
+  reveal: {}, rdraft: {}, vdraft: {}, paste: {}, digests: [], dig: {}, digBusy: null, dgCtl: null};
 
 /* ---------- helpers ---------- */
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -704,8 +706,10 @@ function renderComposer(){
     : '未讀內文時用：不用重述，直接取得核心主張、批評，和這本書值不值得讀。';
   $('noteCount').textContent = '已寫 ' + n + ' 字（最少 ' + MIN_NOTE + ' 字）';
   $('pickText').textContent = S.files.length ? '已選 ' + S.files.length + ' 張，按此重選' : (mode === 'A' ? '② 打開書，影這一頁' : '＋ 影封面、目錄或前言');
-  $('askBtn').textContent = mode === 'A' ? '核對我的重述' : '篩書：核心主張';
-  $('askBtn').disabled = $('copyBtn').disabled = S.busy || !g.ok;
+  const autoDg = mode === 'B' && !!S.sample && $('autoDg').checked;
+  $('autoDgWrap').hidden = mode !== 'B' || !S.sample;
+  $('askBtn').textContent = mode === 'A' ? '核對我的重述' : autoDg ? '篩書：核心主張＋十種視覺筆記' : '篩書：核心主張';
+  $('askBtn').disabled = $('copyBtn').disabled = S.busy || !!S.digBusy || !g.ok;
   $('saveOnlyBtn').disabled = S.busy || (!S.files.length && !(mode === 'A' && n));
   msgTo('gateMsg', g.msg);
   $('calmLabel').textContent = '這次閱讀前有入定' + (fl ? '（擲硬幣：' + (fl.result === 'calm' ? '入定' : '不入定') + '）' : '');
@@ -730,6 +734,7 @@ $('file').onchange = () => {
 for (const r of document.querySelectorAll('input[name="mode"]')) r.onchange = renderComposer;
 $('note').oninput = () => { store(DRAFT_KEY, $('note').value); renderComposer(); };
 $('calm').onchange = () => { S.calmTouched = true; };
+$('autoDg').onchange = renderComposer;
 $('goal').onchange = () => { S.goalLoaded = true; if (S.db) S.db.doc('practice/goal').set({text: $('goal').value.trim(), updatedAt: Date.now()}).catch(() => {}); };
 $('goal').onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('goal').blur(); } };
 async function shrink(file){
@@ -812,8 +817,11 @@ async function submit(withAnswer){
   let imgFail;
   try { imgFail = await saveEntry(rec, blobs); }
   catch (e) { say(e && e.code === 'quota_exceeded' ? '記錄庫已滿，請先刪除舊記錄。' : '未能儲存記錄，請再試。' + (rec.answer ? '答覆仍在上面，可以先複製。' : '')); setBusy(false); return; }
-  const where = '「' + (cleanTitle(rec.bookTitle) || NOBOOK) + ' › ' + (rec.chapter || NOCHAP) + '」';
-  afterSave(rec, (imgFail ? '已儲存文字，但相片未能保存。' : '已儲存到' + where + '。') + (rec.cover ? '覆蓋 ' + rec.cover.hit + '/' + rec.cover.total + (rec.wrong ? '，講錯 ' + rec.wrong : '') + '。' : ''));
+  const bk = cleanTitle(rec.bookTitle) || NOBOOK, where = '「' + bk + ' › ' + (rec.chapter || NOCHAP) + '」';
+  const base = (imgFail ? '已儲存文字，但相片未能保存。' : '已儲存到' + where + '。') + (rec.cover ? '覆蓋 ' + rec.cover.hit + '/' + rec.cover.total + (rec.wrong ? '，講錯 ' + rec.wrong : '') + '。' : '');
+  const wantDg = withAnswer && mode === 'B' && $('autoDg').checked;
+  afterSave(rec, base + (wantDg ? '正自動生成十種視覺筆記，進度見「全書整理」。' : ''));
+  if (wantDg) { S.dgBook = bk; const m = await genAllDigests(bk, rec); say(base + m); }
 }
 $('composer').addEventListener('submit', ev => { ev.preventDefault(); submit(true); });
 $('saveOnlyBtn').onclick = () => submit(false);
@@ -973,8 +981,10 @@ const DG = [
 const DGK = Object.fromEntries(DG.map(d => [d[0], d]));
 const hid = s => { let h = 5381; for (const ch of String(s)) h = ((h * 33) ^ ch.codePointAt(0)) >>> 0; return h.toString(36); };
 const dgId = (bk, kind) => 'g' + hid(bk) + '-' + kind;
-function bookMaterial(bk){
-  const list = S.entries.filter(e => bookOf(e) === bk).slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+function bookMaterial(bk, extra){
+  const list = S.entries.filter(e => bookOf(e) === bk);
+  if (extra && bookOf(extra) === bk && !list.some(e => e.createdAt === extra.createdAt)) list.push(extra);
+  list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   const L = []; let n = 0;
   for (const e of list) {
     const parts = ['〔' + (e.chapter || NOCHAP) + '｜' + (e.mode === 'B' ? '篩書' : '內文頁') + '〕'];
@@ -986,20 +996,71 @@ function bookMaterial(bk){
   }
   return {text: L.join('\n\n'), count: list.length};
 }
-function digestPrompt(bk, kind){
-  const d = DGK[kind], m = bookMaterial(bk), goal = $('goal').value.trim();
-  return ['你是閱讀整理者。任務：' + d[1] + '（' + d[2] + '）。書名：' + bk + '。',
+// kinds 是字串 → 單一版式提問；是陣列（即使只有一個）→ 每個版式以「===版式：/代號===」分隔，方便一鍵生成拆開
+function digestPrompt(bk, kinds, extra){
+  const one = !Array.isArray(kinds); kinds = [].concat(kinds);
+  const d = DGK[kinds[0]], m = bookMaterial(bk, extra), goal = $('goal').value.trim();
+  return [one ? '你是閱讀整理者。任務：' + d[1] + '（' + d[2] + '）。書名：' + bk + '。'
+      : '你是閱讀整理者。書名：' + bk + '。任務：一次過輸出以下 ' + kinds.length + ' 種整理版式，全部都要寫，不可省略。',
     '',
-    '原料只限下面「我的閱讀記錄」：我的重述，以及答覆中屬於作者原文或核對結果的部分。記錄沒有覆蓋的章節、人物或情節，不要補；全書整理只代表我已讀的部分。不要編造引文、頁碼、數據或情節；你自己的推論在句末標「（推論）」。',
+    '原料只限下面「我的閱讀記錄」：我的重述，以及答覆中屬於作者原文或核對結果的部分。記錄沒有覆蓋的章節、人物或情節，不要補；全書整理只代表我已讀的部分。若記錄只有篩書（封面／目錄），就按篩書答覆的核心主張、核心概念和推導整理。不要編造引文、頁碼、數據或情節；你自己的推論在句末標「（推論）」。',
     goal ? '我當前要解決的問題：' + goal : '',
     '',
     '輸出規則：只用下列行格式，每行一項，不要開場白、總結、Markdown 符號或其他文字。',
     '可用的行：「題：」「節：名稱｜說明」「點：」「連：甲 → 乙｜關係」「句：句子｜出處」「做：行動｜完成標準」「上：」「下：文字｜對應」。「點」「做」屬於它上面最近的「節」。',
-    '這次的內容：' + d[3],
-    '第一行必須是「題：」。繁體中文書面語，每行盡量短。',
+    one ? '這次的內容：' + d[3] : '每個版式先獨立一行寫「===版式：/代號===」，下一行開始是該版式的內容。各版式的代號和內容：\n' + kinds.map(k => '===版式：/' + k + '===（' + DGK[k][1] + '）' + DGK[k][3]).join('\n'),
+    (one ? '第一行' : '每個版式的第一行') + '必須是「題：」。繁體中文書面語，每行盡量短。',
     '',
     '我的閱讀記錄（共 ' + m.count + ' 條，按時間先後）：',
     m.text].filter(x => x !== '').join('\n');
+}
+function splitDigests(raw){
+  const map = {}; let cur = '', buf = [];
+  for (const line of String(raw || '').split('\n')) {
+    const h = /^[\s=#*>【\[]*版式\s*[:：]\s*\/?([a-z]+)[\s=*】\]]*/i.exec(line), k = h && h[1].toLowerCase();
+    if (k && DGK[k]) { if (cur) map[cur] = buf.join('\n'); cur = k; buf = []; }
+    else if (cur) buf.push(line);
+  }
+  if (cur) map[cur] = buf.join('\n');
+  return map;
+}
+async function saveDigest(bk, kind, text){
+  if (!text || parseDigest(text, kind).empty) return false;
+  const doc = S.digests.find(x => x.id === dgId(bk, kind));
+  await S.db.doc('digests/' + dgId(bk, kind)).set({bookTitle: bk, kind, text: text.trim(), done: [], createdAt: doc ? doc.createdAt || Date.now() : Date.now(), updatedAt: Date.now()});
+  return true;
+}
+// 一鍵生成：每次請求 5 個版式，未成功的再補兩輪；只補未有的，全部已有就全部重畫
+async function genAllDigests(bk, extra){
+  if (!S.db || !S.sample || S.digBusy) return '';
+  const all = DG.map(d => d[0]), missing = all.filter(k => !S.digests.some(x => x.id === dgId(bk, k)));
+  const target = missing.length ? missing : all, done = new Set(), ctl = new AbortController();
+  const show = t => msgTo('dgAllSay', t);
+  S.digBusy = bk + '|*'; S.dgCtl = ctl; renderRecords(); renderComposer();
+  let err = '';
+  try {
+    for (let round = 0; round < 2; round++) {
+      const left = target.filter(k => !done.has(k));
+      if (!left.length || ctl.signal.aborted) break;
+      for (let i = 0; i < left.length && !ctl.signal.aborted; i += 5) {
+        const chunk = left.slice(i, i + 5), names = chunk.map(k => DGK[k][1]).join('、');
+        const head = (round ? '補齊第 ' + round + ' 輪：' : '生成中：') + names;
+        show(head + '（已完成 ' + done.size + '/' + target.length + '）…');
+        const r = await S.sample(digestPrompt(bk, chunk, extra), {signal: ctl.signal,
+          onText: ({text}) => show(head + '（這批已收到 ' + Object.keys(splitDigests(text)).length + '/' + chunk.length + '，已完成 ' + done.size + '/' + target.length + '）…')});
+        const map = splitDigests(r.text);
+        for (const k of chunk) if (await saveDigest(bk, k, map[k])) done.add(k);
+      }
+    }
+  } catch (e) { if (!(e && e.code === 'cancelled') && !ctl.signal.aborted) err = errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + (e && e.detail ? '；' + e.detail : '') + '）'; }
+  S.digBusy = null; S.dgCtl = null;
+  const n = done.size, t = target.length;
+  const m = ctl.signal.aborted ? '已停止，保留 ' + n + '/' + t + ' 種視覺筆記。'
+    : err ? '視覺筆記生成 ' + n + '/' + t + ' 種後中斷：' + err
+    : n === t ? '已生成 ' + n + ' 種視覺筆記，左右掃動查看。'
+    : '已生成 ' + n + '/' + t + ' 種視覺筆記；其餘按「全書整理」的「補齊」再試。';
+  show(m); renderRecords(); renderComposer();
+  return m;
 }
 function parseDigest(raw, kind){
   const o = {title: '', groups: [], links: [], quotes: [], todos: [], above: [], below: []};
@@ -1403,11 +1464,7 @@ function digestSlide(bk, kind, st){
   ttl.append(el('h4', null, '/' + kind + '　' + d[1]), el('p', 'msg', d[2]));
   const acts = el('div', 'row'), go = btn(doc ? '重新生成' : '生成', 'primary'); go.disabled = !!S.digBusy;
   acts.append(go); head.append(ttl, acts); sl.append(head);
-  const save = async text => {
-    if (parseDigest(text, kind).empty) return false;
-    await S.db.doc('digests/' + dgId(bk, kind)).set({bookTitle: bk, kind, text: text.trim(), done: [], createdAt: doc ? doc.createdAt || Date.now() : Date.now(), updatedAt: Date.now()});
-    return true;
-  };
+  const save = text => saveDigest(bk, kind, text);
   go.onclick = async () => {
     if (!S.db || S.digBusy) return;
     const prompt = digestPrompt(bk, kind); st.err = ''; st.kind = kind;
@@ -1484,8 +1541,14 @@ function renderDigests(){
     c.onclick = () => { S.dgBook = b; renderDigests(); };
     bar.append(c);
   }
+  const have = DG.filter(d => S.digests.some(x => x.id === dgId(S.dgBook, d[0]))).length, all = $('dgAllBtn'), run = !!S.dgCtl;
+  all.hidden = !S.sample;
+  all.textContent = run ? '停止' : !have ? '一鍵生成全部十種' : have < DG.length ? '補齊餘下 ' + (DG.length - have) + ' 種' : '全部重新生成';
+  all.classList.toggle('danger', run); all.classList.toggle('primary', !run);
+  all.disabled = !run && (!!S.digBusy || S.busy);
   box.textContent = ''; box.append(digestPanel(S.dgBook));
 }
+$('dgAllBtn').onclick = () => { if (S.dgCtl) S.dgCtl.abort(); else if (S.dgBook) genAllDigests(S.dgBook); };
 function digestPanel(bk){
   const st = S.dig[bk] || (S.dig[bk] = {kind: 'visualnotes', paste: null}), box = el('div', 'dg-panel');
   const chips = el('div', 'dg-chips'), gal = el('div', 'dg-gal'), nav = el('div', 'row dg-nav');

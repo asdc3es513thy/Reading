@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """GitHub 版（index.html）：沒有 window.claude，用 IndexedDB，答覆靠複製提問、貼上答覆。"""
+import re
 import json
 import subprocess
 import sys
@@ -130,6 +131,9 @@ RECS = '書名：新書甲（New Book A）\n作者／出版年月／出版社：
 STATE = {}
 
 
+DG_BODY = '題：測試\n節：甲｜說明\n點：一\n連：甲 → 乙｜導致\n句：一句｜第一章\n做：行動｜標準\n上：表面\n下：深層｜表面'
+
+
 def web_mode(b, url, img):
     """Vercel 網頁版：/api/ask 存在時，按「核對我的重述」即經本網站取得答覆。"""
     calls = []
@@ -147,6 +151,14 @@ def web_mode(b, url, img):
         if body.get('search'):
             done = {'done': True, 'truncated': False, 'sources': [{'title': '出版社新書頁', 'uri': 'https://example.com/new-book'}, {'title': '壞連結', 'uri': 'javascript:alert(1)'}]}
             lines = [json.dumps({'t': RECS}, ensure_ascii=False), json.dumps(done, ensure_ascii=False)]
+            return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
+        kinds = re.findall(r'===版式：/(\w+)===', body.get('prompt', ''))
+        if kinds:
+            STATE['dg'] = STATE.get('dg', 0) + 1
+            if STATE['dg'] == 1:
+                kinds = [k for k in kinds if k != 'quotes']   # 第一批故意漏一個，測試自動補齊
+            text = ''.join('===版式：/' + k + '===\n' + DG_BODY + '\n' for k in kinds)
+            lines = [json.dumps({'t': text}, ensure_ascii=False), '{"done":true,"truncated":false,"provider":"openrouter"}']
             return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
         lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), '{"done":true,"truncated":false,"provider":"openrouter","model":"test/model:free"}']
         return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
@@ -207,6 +219,19 @@ def web_mode(b, url, img):
     page.click('#recsBtn')
     page.wait_for_function("document.getElementById('recsSay').textContent.includes('更新於')")
     check(len([c for c in calls if c.get('search')]) == 2, '按「更新推介」即重新搜尋')
+    # 篩書一鍵：核心主張＋十種視覺筆記
+    page.check('#modeB')
+    page.set_input_files('#file', img)
+    check(page.inner_text('#askBtn') == '篩書：核心主張＋十種視覺筆記', '篩書按鈕預設同時生成十種視覺筆記')
+    n0 = len(calls)
+    page.click('#askBtn')
+    page.wait_for_function("document.getElementById('dgAllSay').textContent.includes('已生成 10 種')", timeout=20000)
+    dg = [c for c in calls[n0:] if '===版式：/' in c['prompt']]
+    check(len(dg) == 3 and not any(c['images'] for c in dg) and all('篩書' in c['prompt'] for c in dg), '一按篩書：兩批生成十種，漏了的自動補齊，不附相片')
+    check(page.evaluate("document.querySelectorAll('.dg-chip.has').length") == 10 and page.inner_text('#dgAllBtn') == '全部重新生成', '十種版式全部儲存')
+    check('已生成 10 種' in page.inner_text('#say'), '上載區顯示完成')
+    page.uncheck('#autoDg')
+    check(page.inner_text('#askBtn') == '篩書：核心主張', '取消剔選就只篩書')
     check(not errors, '網頁版沒有 JavaScript 錯誤' + (('：' + errors[0]) if errors else ''))
     ctx.close()
 
