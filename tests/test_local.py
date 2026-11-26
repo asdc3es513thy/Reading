@@ -67,7 +67,7 @@ def main():
 
 
         # 全書整理（複製模式）：複製提問、貼上答覆
-        page.click('.bk:has-text("測試之書") button:has-text("整理全書")')
+        page.click('#dgBooks button:has-text("測試之書")')
         page.click('.dg-chip:nth-child(10)')
         page.click('.dg-slide[data-kind=iceberg] button:has-text("生成")')
         page.wait_for_selector('.dg-panel textarea[aria-label="整理答覆"]')
