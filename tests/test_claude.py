@@ -102,6 +102,8 @@ def main():
         page.check('#modeB')
         page.set_input_files('#file', img)
         check(page.is_enabled('#askBtn'), '篩書模式有相片即可送出')
+        check(page.inner_text('#askBtn') == '篩書：核心主張＋十種視覺筆記', '篩書按鈕預設連十種視覺筆記')
+        page.uncheck('#autoDg')   # 一鍵生成另在 test_local 測試；這裡只測篩書提問
         check(page.inner_text('#askBtn') == '篩書：核心主張', '篩書按鈕名稱')
         page.evaluate("window.__claude.answer = " + json.dumps(SCREEN))
         page.click('#askBtn')
