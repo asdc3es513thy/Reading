@@ -52,7 +52,6 @@ label.f>*{color:var(--ink);font-size:1rem}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:460px){.grid2{grid-template-columns:1fr}}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--veil);padding:4px;border-radius:12px}
-@media (max-width:520px){.tabs{grid-template-columns:1fr 1fr}}
 .tabs a{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 4px;font-size:.92rem;border-radius:9px;color:var(--ink);text-decoration:none;font-weight:600}
 .tabs a.on{background:rgba(111,208,192,.16);color:var(--accent)}
 .badge{min-width:1.5em;padding:0 6px;border-radius:999px;background:var(--danger);color:var(--danger-ink);font-size:.75rem;line-height:1.6;text-align:center;text-shadow:none}
@@ -125,13 +124,14 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 .flow li::before{content:counter(f);flex:none;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-ink);text-shadow:none;
   font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
 /* 全書整理：每個版式一張圖；版式用 scroll snap 橫向掃動 */
-.dg-panel{gap:10px;padding:10px}
+.dg-panel{display:flex;flex-direction:column;gap:10px;min-width:0}
+.dg-books{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none}.dg-books::-webkit-scrollbar{display:none}
 .dg-chips{position:sticky;top:var(--tabs-h,0px);z-index:5;display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;padding:6px;margin:-4px -4px 0;
   border-radius:10px;background:rgba(7,11,16,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);scrollbar-width:none}
 .dg-chips::-webkit-scrollbar{display:none}
-.dg-chip{flex:none;scroll-snap-align:start;min-height:36px;padding:6px 12px;border-radius:999px;font-size:.88rem;white-space:nowrap}
+.dg-chip,.dg-book{flex:none;scroll-snap-align:start;min-height:36px;padding:6px 12px;border-radius:999px;font-size:.88rem;white-space:nowrap}
 .dg-chip.has{color:var(--accent)}
-.dg-chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);text-shadow:none;font-weight:600}
+.dg-chip.on,.dg-book.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);text-shadow:none;font-weight:600}
 .dg-gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scroll-behavior:auto;border-radius:10px;scrollbar-width:thin}
 .dg-gal:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .dg-slide{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column;gap:10px;padding:2px}
@@ -144,7 +144,8 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 .dg-empty{padding:28px 12px;text-align:center;border:1.5px dashed rgba(111,208,192,.5);border-radius:10px}
 .dg-err{color:var(--danger)}
 .dg-nav button{min-width:96px}
-.tabs{position:sticky;top:0;z-index:20}
+.tabs{position:sticky;top:0;z-index:20;background:rgba(7,11,16,.62);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+@media (max-width:520px){.tabs{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs a{flex:0 0 auto;scroll-snap-align:start;padding:8px 14px;white-space:nowrap}}
 </style>
 
 </head>
@@ -201,6 +202,13 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
     </form>
     <datalist id="chapList"></datalist>
     <datalist id="bookNames"></datalist>
+
+    <section class="card" id="dgCard" hidden>
+      <h2>全書整理：十種版式</h2>
+      <p class="msg">揀一本書，再揀版式，按「生成」畫成一張圖。左右掃動切換版式。AI 只用這本書已存的重述和答覆；未讀的部分不會出現。</p>
+      <div class="dg-books" id="dgBooks" role="group" aria-label="揀書"></div>
+      <div id="dgBox"></div>
+    </section>
 
     <section style="display:flex;flex-direction:column;gap:10px">
       <div class="row between"><h2>記錄</h2><span class="msg" id="count"></span></div>
@@ -455,7 +463,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-26 · 1602bfd · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-26 · 43a0dbe · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -907,6 +915,7 @@ function entryNode(e){
   return a;
 }
 function renderRecords(){
+  renderDigests();
   const box = $('records'); box.textContent = '';
   const all = S.entries;
   $('count').textContent = all.length ? '共 ' + all.length + ' 條' : '';
@@ -925,11 +934,7 @@ function renderRecords(){
     for (const v of chs.values()) n += v.length;
     left.style.minWidth = '0'; left.append(el('h3', null, bk));
     const ty = typeFor(bk); if (ty) left.append(el('span', 'tag', ty));
-    const right = el('div', 'row'), dst = S.dig[bk], dgb = btn(dst && dst.open ? '收起整理' : '整理全書');
-    dgb.onclick = () => { const st = S.dig[bk] || (S.dig[bk] = {kind: 'visualnotes', paste: null}); st.open = !st.open; renderRecords(); };
-    right.append(el('span', 'msg', n + ' 條'), dgb);
-    h.append(left, right); box.append(h);
-    if (dst && dst.open) box.append(digestPanel(bk));
+    h.append(left, el('span', 'msg', n + ' 條')); box.append(h);
     const keys = [...chs.keys()].sort((x, y) => x === NOCHAP ? 1 : y === NOCHAP ? -1 : x.localeCompare(y, 'zh-Hant', {numeric: true}));
     for (const k of keys) {
       const d = el('details', 'chap'), key = bk + '|' + k;
@@ -1033,7 +1038,7 @@ function parseDigest(raw, kind){
 }
 
 /* ---------- 全書整理：每個版式畫成一張 SVG 圖 ---------- */
-const SVGNS = 'http://www.w3.org/2000/svg', IW = 640, IP = 28;
+const SVGNS = 'http://www.w3.org/2000/svg', IW = 440, IP = 20;
 const HAND = '"Kaiti TC","STKaiti","KaiTi","BiauKai","Klee One","PingFang HK",serif';
 const SANS = '"PingFang HK","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif';
 const MONO = 'ui-monospace,"SF Mono",Menlo,"PingFang HK","Noto Sans TC",monospace';
@@ -1090,9 +1095,9 @@ const DRAW = {
     svg.append(sv('rect', {width: IW, height: 9999, fill: '#0f1c26'}));
     svg.append(sv('rect', {width: IW, height: 6, fill: '#6fd0c0'}));
     let y = header(svg, o, bk, 22, c);
-    const cw = (IW - IP * 2 - 16) / 2, gs = o.groups;
-    for (let i = 0; i < gs.length; i += 2) {
-      const pair = gs.slice(i, i + 2), hs = pair.map(g => 58 + hOf(g.desc, 12, cw - 28) + g.items.reduce((n, t) => n + hOf(t, 14, cw - 44) + 6, 0) + 10);
+    const cols = 1, cw = IW - IP * 2, gs = o.groups;
+    for (let i = 0; i < gs.length; i += cols) {
+      const pair = gs.slice(i, i + cols), hs = pair.map(g => 58 + hOf(g.desc, 12, cw - 28) + g.items.reduce((n, t) => n + hOf(t, 14, cw - 44) + 6, 0) + 10);
       const rh = Math.max(...hs);
       pair.forEach((g, j) => {
         const x = IP + j * (cw + 16), col = HUES[(i + j) % HUES.length];
@@ -1119,7 +1124,7 @@ const DRAW = {
     const names = o.groups.map(g => g.name).filter(Boolean);
     const find = n => names.findIndex(x => x === n || x.includes(n) || n.includes(x));
     for (const l of o.links) for (const n of [l.a, l.b]) if (find(n) < 0 && names.length < 12) names.push(n);
-    const N = names.length, R = N > 1 ? 200 : 0, cx = IW / 2, cy = y + 40 + R, nw = 124, nh = 46;
+    const N = names.length, R = N > 1 ? 150 : 0, cx = IW / 2, cy = y + 30 + R * .82, nw = 108, nh = 44;
     const pos = names.map((_, i) => [cx + R * Math.cos(-Math.PI / 2 + 2 * Math.PI * i / N), cy + R * .82 * Math.sin(-Math.PI / 2 + 2 * Math.PI * i / N)]);
     const edges = sv('g'), labels = sv('g'), nodes = sv('g');
     for (const l of o.links) {
@@ -1134,7 +1139,7 @@ const DRAW = {
       }
     }
     names.forEach((n, i) => {
-      const [x, y0] = pos[i], col = HUES[i % HUES.length], ls = wrapT(n, 13, nw - 14, 2);
+      const [x, y0] = pos[i], col = HUES[i % HUES.length], ls = wrapT(n, 13, nw - 12, 2);
       nodes.append(sv('rect', {x: x - nw / 2, y: y0 - nh / 2, width: nw, height: nh, rx: 12, fill: '#15232e', stroke: col, 'stroke-width': 1.8, class: 'dg-node'}));
       txt(nodes, '', x, y0 - (ls.length > 1 ? 18 : 10), {fs: 13, bold: true, lines: ls, anchor: 'middle', fill: col, lh: 16});
     });
@@ -1181,7 +1186,7 @@ const DRAW = {
     const c = {title: '#e8eef0', sub: '#9fb0b4'};
     svg.append(sv('rect', {width: IW, height: 9999, fill: '#121722'}));
     let y = header(svg, o, bk, 22, c);
-    const pw = 190, ix = IP + pw + 46, iw = IW - ix - IP;
+    const pw = 136, ix = IP + pw + 28, iw = IW - ix - IP;
     o.groups.forEach((g, i) => {
       const col = HUES[i % HUES.length];
       const ph = 22 + hOf(g.name, 16, pw - 24, null, 3) + (g.desc ? hOf(g.desc, 12, pw - 24) + 6 : 0);
@@ -1194,7 +1199,7 @@ const DRAW = {
       let iy = y + (bh - ih) / 2;
       g.items.forEach((t, k) => {
         const h = ihs[k], my = iy + h / 2;
-        svg.append(sv('path', {d: 'M' + (IP + pw) + ',' + (py + ph / 2) + ' C' + (IP + pw + 30) + ',' + (py + ph / 2) + ' ' + (ix - 30) + ',' + my + ' ' + ix + ',' + my, fill: 'none', stroke: col, 'stroke-width': 1.6, 'stroke-opacity': .8}));
+        svg.append(sv('path', {d: 'M' + (IP + pw) + ',' + (py + ph / 2) + ' C' + (IP + pw + 18) + ',' + (py + ph / 2) + ' ' + (ix - 18) + ',' + my + ' ' + ix + ',' + my, fill: 'none', stroke: col, 'stroke-width': 1.6, 'stroke-opacity': .8}));
         svg.append(sv('rect', {x: ix, y: iy, width: iw, height: h, rx: 8, fill: 'rgba(255,255,255,.05)', stroke: col, 'stroke-opacity': .5}));
         txt(svg, t, ix + 10, iy + 7, {fs: 13, w: iw - 20});
         iy += h + 8;
@@ -1209,12 +1214,12 @@ const DRAW = {
     svg.append(sv('rect', {width: IW, height: 9999, fill: 'url(#qtG)'}));
     svg.append(sv('text', {x: IW / 2, y: 92, 'font-size': 120, fill: '#6fd0c0', 'fill-opacity': .18, 'text-anchor': 'middle', 'font-family': 'Georgia,serif'}, '“'));
     let y = 48;
-    y += txt(svg, o.title || '《' + bk + '》金句', IW / 2, y, {fs: 26, bold: true, w: IW - 120, anchor: 'middle', fill: '#f5c26b'});
-    y += txt(svg, '《' + bk + '》', IW / 2, y + 6, {fs: 13, w: IW - 120, anchor: 'middle', fill: '#9fb0b4'}) + 30;
+    y += txt(svg, o.title || '《' + bk + '》金句', IW / 2, y, {fs: 24, bold: true, w: IW - 60, anchor: 'middle', fill: '#f5c26b'});
+    y += txt(svg, '《' + bk + '》', IW / 2, y + 6, {fs: 13, w: IW - 60, anchor: 'middle', fill: '#9fb0b4'}) + 30;
     o.quotes.forEach((q, i) => {
       if (i) { svg.append(sv('path', {d: 'M' + (IW / 2 - 5) + ',' + y + ' l5,-5 l5,5 l-5,5z', fill: '#6fd0c0', 'fill-opacity': .7})); y += 24; }
-      y += txt(svg, q.t, IW / 2, y, {fs: i % 3 === 0 ? 24 : 20, bold: true, w: IW - 110, anchor: 'middle', fill: i % 2 ? '#e8eef0' : '#6fd0c0', lh: (i % 3 === 0 ? 24 : 20) * 1.4}) + 4;
-      if (q.src) y += txt(svg, '— ' + q.src, IW / 2, y + 2, {fs: 12, w: IW - 110, anchor: 'middle', fill: '#9fb0b4'}) + 6;
+      y += txt(svg, q.t, IW / 2, y, {fs: i % 3 === 0 ? 22 : 19, bold: true, w: IW - 56, anchor: 'middle', fill: i % 2 ? '#e8eef0' : '#6fd0c0', lh: (i % 3 === 0 ? 24 : 20) * 1.4}) + 4;
+      if (q.src) y += txt(svg, '— ' + q.src, IW / 2, y + 2, {fs: 12, w: IW - 56, anchor: 'middle', fill: '#9fb0b4'}) + 6;
       y += 18;
     });
     return y + 30;
@@ -1277,7 +1282,7 @@ const DRAW = {
       y += h;
     });
     y += 24;
-    const tbw = 260, tbx = IW - IP - tbw;
+    const tbw = 230, tbx = IW - IP - tbw;
     svg.append(sv('rect', {x: tbx, y, width: tbw, height: 66, fill: 'none', stroke: '#fff'}),
       sv('line', {x1: tbx, y1: y + 22, x2: tbx + tbw, y2: y + 22, stroke: '#fff'}), sv('line', {x1: tbx, y1: y + 44, x2: tbx + tbw, y2: y + 44, stroke: '#fff'}));
     for (const [k, v, i] of [['圖名', '全書結構藍圖', 0], ['書名', cutS(bk, 14), 1], ['日期', dateVal(Date.now()), 2]])
@@ -1348,7 +1353,7 @@ const DRAW = {
     svg.append(sea, sky);
     let y = 22;
     y += txt(svg, o.title || '《' + bk + '》冰山圖', IP, y, {fs: 22, bold: true, w: IW - IP * 2, fill: '#0b2f4a'}) + 10;
-    const tipW = 180, tx = IW - IP - tipW, aw = tx - IP - 20, top = y;
+    const tipW = 130, tx = IW - IP - tipW, aw = tx - IP - 10, top = y;
     svg.append(sv('text', {x: IP, y: y + 12, 'font-size': 12, 'font-weight': 700, fill: '#1c6fa3', 'font-family': SANS}, '水面上：看得見的'));
     y += 22;
     for (const t of o.above) { svg.append(sv('circle', {cx: IP + 5, cy: y + 9, r: 4, fill: '#1c6fa3'})); y += txt(svg, t, IP + 16, y, {fs: 14, w: aw - 16, fill: '#0b2f4a'}) + 8; }
@@ -1357,7 +1362,7 @@ const DRAW = {
     svg.append(sv('path', {d: 'M' + (tx + 20) + ',' + wl + ' L' + (tx + 70) + ',' + (top + 10) + ' L' + (tx + 100) + ',' + (top + 40) + ' L' + (tx + 125) + ',' + (top + 22) + ' L' + (tx + tipW - 10) + ',' + wl + 'Z', fill: 'url(#ibIce)', stroke: '#ffffff', 'stroke-width': 2}));
     svg.append(sv('path', {d: 'M' + (tx + 70) + ',' + (top + 10) + ' L' + (tx + 82) + ',' + wl + ' L' + (tx + 20) + ',' + wl + 'Z', fill: '#ffffff', 'fill-opacity': .45}));
     let by = wl + 40;
-    const iw = IW - IP * 2 - 60, ix = IP + 50;
+    const iw = IW - IP * 2 - 30, ix = IP + 20;
     const items = sv('g'); let iy = by + 18;
     items.append(sv('text', {x: ix + 10, y: iy, 'font-size': 12, 'font-weight': 700, fill: '#0b4a75', 'font-family': SANS}, '水面下：深層意義、原因、假設'));
     iy += 12;
@@ -1413,7 +1418,7 @@ function digestSlide(bk, kind, st){
     }
     S.digBusy = bk + '|' + kind; st.live = ''; renderRecords();
     try {
-      const r = await S.sample(prompt, {onText: ({text}) => { st.live = text; const q = $('records').querySelector('.dg-live'); if (q) q.textContent = text; }});
+      const r = await S.sample(prompt, {onText: ({text}) => { st.live = text; const q = $('dgBox').querySelector('.dg-live'); if (q) q.textContent = text; }});
       if (!(await save(r.text))) { st.err = '答覆不符合格式，未儲存，請再試。'; st.bad = r.text; }
     } catch (e) { st.err = errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + '）'; }
     S.digBusy = null; renderRecords();
@@ -1465,8 +1470,24 @@ function digestSlide(bk, kind, st){
   sl.append(foot);
   return sl;
 }
+function renderDigests(){
+  const books = [];
+  for (const e of S.entries) { const b = bookOf(e); if (!books.includes(b)) books.push(b); }
+  const card = $('dgCard'), bar = $('dgBooks'), box = $('dgBox');
+  card.hidden = !S.le || !books.length;
+  if (card.hidden) return;
+  if (!books.includes(S.dgBook)) S.dgBook = books.find(b => b !== NOBOOK) || books[0];
+  bar.textContent = ''; bar.hidden = books.length < 2;
+  for (const b of books) {
+    const c = el('button', 'dg-book' + (b === S.dgBook ? ' on' : ''), b); c.type = 'button';
+    c.setAttribute('aria-pressed', b === S.dgBook ? 'true' : 'false');
+    c.onclick = () => { S.dgBook = b; renderDigests(); };
+    bar.append(c);
+  }
+  box.textContent = ''; box.append(digestPanel(S.dgBook));
+}
 function digestPanel(bk){
-  const st = S.dig[bk], box = el('div', 'card dg-panel');
+  const st = S.dig[bk] || (S.dig[bk] = {kind: 'visualnotes', paste: null}), box = el('div', 'dg-panel');
   const chips = el('div', 'dg-chips'), gal = el('div', 'dg-gal'), nav = el('div', 'row dg-nav');
   chips.setAttribute('role', 'tablist'); chips.setAttribute('aria-label', '整理版式');
   gal.tabIndex = 0; gal.setAttribute('aria-label', '整理圖：左右掃動或按方向鍵');

@@ -124,7 +124,7 @@ def main():
 
 
         # 全書整理：十種版式，每個畫成一張 SVG 圖；版式橫向 scroll snap
-        page.click('.bk button:has-text("整理全書")')
+        check(page.is_visible('#dgCard'), '有記錄就直接顯示「全書整理」，不用另外打開')
         chips = page.eval_on_selector_all('.dg-chip', 'n => n.length')
         slides = page.eval_on_selector_all('.dg-slide', 'n => n.map(x => x.dataset.kind)')
         check(chips == 10 and slides == ['visualnotes', 'mentalmodels', 'chaptermap', 'themes', 'quotes', 'handwritten', 'blueprint', 'timeline', 'actionplan', 'iceberg'], '整理有十種版式，各一頁')
