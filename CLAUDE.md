@@ -32,6 +32,7 @@
 
 - 兩個版本的資料互不相通，只靠「匯出／匯入備份」（JSON，`app: "睇書記錄"`）搬。
 - 集合與欄位名稱（`entries`、`cards`、`sessions`、`practice` 及其欄位）不可改名或改變意義，否則舊記錄讀不到。舊記錄可能沒有 `mode`、`cover` 等新欄位，程式要容許。
+- `digests`：每本書的「整理全書」結果（十種版式：visualnotes、mentalmodels、chaptermap、themes、quotes、handwritten、blueprint、timeline、actionplan、iceberg）。文件 id = `g` + 書名雜湊 + `-` + 版式；欄位 `bookTitle`、`kind`、`text`（AI 原文，按「題／節／點／連／句／做／上／下」行格式解析）、`done`（行動清單已勾選的序號）。原料只限該書已存記錄，不附相片。舊備份沒有 `digests`，匯入要容許。
 - GitHub Pages 網域 `asdc3es513thy.github.io` 與其他 repo 的頁面共用；localStorage 鍵要加 `reading-log:` 前綴。
 - **這個 repo 是公開的**：不要 commit 用戶的備份 JSON、書頁相片或任何記錄。
 

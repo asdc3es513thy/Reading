@@ -49,6 +49,9 @@ SCREEN = ('書名：《測試之書》\n章節：封面\n類型：論點書\n\n'
           '【核心主張】主張一。\n核心概念：\n概念1 刻意練習：操作定義；支撐主張一；深入步驟：①②③\n'
           '【背景與批評】批評。\n【第一性原理】推理。\n【解構】假設。\n【下一步】行動。')
 
+MAP = '題：測試\n節：刻意練習｜有目標的練習\n節：回饋｜即時糾錯\n節：表現｜結果\n連：刻意練習 → 表現｜導致\n連：回饋 → 刻意練習｜是前提'
+PLAN = '節：今日\n做：練習 10 分鐘｜完成計時\n做：記錄錯誤｜寫下 3 個\n節：這星期\n做：找人回饋｜收到 1 次意見'
+
 
 def main():
     srv, url = serve(ROOT / 'dist')
@@ -110,6 +113,34 @@ def main():
         check('概念1 刻意練習' in s['prompt'] and '推進或修正' in s['prompt'], '內文頁提問帶入同一本書的核心概念，並要求對應')
         page.wait_for_function("document.getElementById('say').textContent.includes('已儲存')")
 
+
+        # 全書整理：十種版式，原料只限已存記錄
+        page.click('.bk button:has-text("整理全書")')
+        opts = page.eval_on_selector('.dg-panel select', 'e => [...e.options].map(o => o.value)')
+        check(opts == ['visualnotes', 'mentalmodels', 'chaptermap', 'themes', 'quotes', 'handwritten', 'blueprint', 'timeline', 'actionplan', 'iceberg'], '整理有十種版式')
+        page.evaluate("window.__claude.answer = " + json.dumps(MAP))
+        page.select_option('.dg-panel select', 'mentalmodels')
+        page.click('.dg-panel button:has-text("生成")')
+        page.wait_for_selector('.dg-mentalmodels svg .dg-node')
+        s = page.evaluate('window.__claude.samples[3]')
+        check(NOTE in s['prompt'] and '只限下面「我的閱讀記錄」' in s['prompt'] and s['images'] == 0, '整理提問只用已存記錄，不附相片')
+        check(page.eval_on_selector_all('.dg-mentalmodels .dg-node', 'n => n.length') == 3 and page.eval_on_selector_all('.dg-mentalmodels .dg-edge', 'n => n.length') == 2, '概念關係圖：3 個節點、2 條連線')
+        page.evaluate("window.__claude.answer = " + json.dumps(PLAN))
+        page.select_option('.dg-panel select', 'actionplan')
+        page.click('.dg-panel button:has-text("生成")')
+        page.wait_for_selector('.dg-actionplan input[type=checkbox]')
+        check(page.eval_on_selector_all('.dg-actionplan input[type=checkbox]', 'n => n.length') == 3, '行動清單：3 個勾選格')
+        page.click('.dg-actionplan input[type=checkbox] >> nth=1')
+        page.wait_for_function("Object.keys(window.__claude).length && document.querySelectorAll('.dg-actionplan input:checked').length === 1")
+        page.select_option('.dg-panel select', 'mentalmodels')
+        page.select_option('.dg-panel select', 'actionplan')
+        check(page.eval_on_selector_all('.dg-actionplan input[type=checkbox]', 'n => n.map(x => x.checked)') == [False, True, False], '勾選狀態已儲存')
+        page.evaluate("window.__claude.answer = '隨便寫的文字，沒有格式'")
+        page.select_option('.dg-panel select', 'iceberg')
+        page.click('.dg-panel button:has-text("生成")')
+        page.wait_for_function("document.querySelector('.dg-panel').textContent.includes('不符合格式')")
+        check(page.query_selector('.dg-iceberg') is None, '不符合格式的答覆不儲存')
+
         # 匯出經 downloads
         page.click('#expJson')
         page.wait_for_function('window.__claude.saves.length === 1')
@@ -118,6 +149,7 @@ def main():
         check(f['filename'].endswith('.json') and data.get('app') == '睇書記錄', '匯出 JSON 經 downloads')
         check(len(data['entries']) == 3 and len(data['images']) == 3, '匯出包括 3 條記錄和 3 張相片')
         check({'entries', 'cards', 'sessions', 'practice'} <= set(data), '匯出集合名稱不變')
+        check(len(data.get('digests', [])) == 2 and {d['kind'] for d in data['digests']} == {'mentalmodels', 'actionplan'}, '匯出包括 2 份全書整理')
 
         check(not errors, '沒有 JavaScript 錯誤' + (('：' + errors[0]) if errors else ''))
         b.close()

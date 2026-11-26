@@ -65,6 +65,19 @@ def main():
         clip = page.evaluate('navigator.clipboard.readText()')
         check('【核心主張】' in clip, '篩書提問用【核心主張】')
 
+
+        # 全書整理（複製模式）：複製提問、貼上答覆
+        page.click('.bk:has-text("測試之書") button:has-text("整理全書")')
+        page.select_option('.dg-panel select', 'iceberg')
+        page.click('.dg-panel button:has-text("生成")')
+        page.wait_for_selector('.dg-panel textarea[aria-label="整理答覆"]')
+        clip = page.evaluate('navigator.clipboard.readText()')
+        check('冰山圖' in clip and NOTE in clip, '整理提問已複製，含版式和重述')
+        page.fill('.dg-panel textarea[aria-label="整理答覆"]', '題：測試\n上：表面一\n下：深層一｜對應表面一')
+        page.click('.dg-panel button:has-text("儲存答覆")')
+        page.wait_for_selector('.dg-iceberg .dg-below')
+        check('深層一' in page.inner_text('.dg-iceberg'), '冰山圖：貼上答覆後顯示水面下')
+
         # 重新載入：IndexedDB 保留
         page.reload()
         page.wait_for_function("document.getElementById('records').textContent.includes('測試之書')")

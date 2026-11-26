@@ -124,6 +124,59 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 .flow li{counter-increment:f;display:flex;gap:10px;align-items:baseline}
 .flow li::before{content:counter(f);flex:none;width:1.7em;height:1.7em;border-radius:50%;background:var(--accent);color:var(--accent-ink);text-shadow:none;
   font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+/* 全書整理：十種版式 */
+.dg-panel{gap:10px}
+.dg{display:flex;flex-direction:column;gap:10px;min-width:0}
+.dg h4{margin:0;font-size:.95rem}
+.dg-title{font-size:1.05rem!important;color:var(--accent)}
+.dg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.dg-box{border-radius:var(--r);padding:10px 12px;background:var(--veil);border:1px solid rgba(111,208,192,.25);min-width:0;display:flex;flex-direction:column;gap:4px}
+.dg-box ul,.dg-links{margin:0;padding-left:1.1em;font-size:.9rem}
+.dg-box li.hot{color:var(--danger);font-weight:600}
+.dg-box li.warn{color:#f5c26b}
+.dg-desc{margin:0;color:var(--muted);font-size:.85rem}
+.dg-svg{width:100%;height:auto;max-height:420px}
+.dg-node{fill:rgba(111,208,192,.16);stroke:var(--accent);stroke-width:1.2}
+.dg-label{fill:var(--ink);font-size:13px;font-family:var(--font)}
+.dg-rel{fill:var(--muted);font-size:10px;font-family:var(--font)}
+.dg-edge{stroke:rgba(195,207,209,.6);stroke-width:1.2}
+.dg-arrow{fill:rgba(195,207,209,.8)}
+.dg-flow{display:flex;flex-direction:column;align-items:stretch}
+.dg-join{text-align:center;color:var(--accent);font-size:.85rem;padding:4px 0}
+.dg-timeline .dg-flow{border-left:2px solid var(--accent);margin-left:8px;padding-left:14px}
+.dg-timeline .dg-step{position:relative}
+.dg-timeline .dg-step::before{content:"";position:absolute;left:-22px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--accent)}
+.dg-timeline .dg-join{color:transparent;padding:2px 0}
+.dg-quotes{padding:18px 14px;border-radius:var(--r);background:linear-gradient(160deg,rgba(111,208,192,.12),rgba(0,0,0,.35));text-align:center;gap:18px}
+.dg-quote{margin:0}
+.dg-quote blockquote{margin:0;font-size:1.15rem;line-height:1.5;font-weight:600}
+.dg-quote:nth-of-type(odd) blockquote{color:var(--accent)}
+.dg-quote figcaption{margin-top:4px;font-size:.8rem;color:var(--muted)}
+.dg-handwritten{background:#fbf5e3 repeating-linear-gradient(#fbf5e3 0 27px,#c9d6e8 27px 28px);color:#24324a;text-shadow:none;padding:16px 14px 16px 34px;border-radius:6px;
+  font-family:"Kaiti TC","STKaiti","KaiTi","BiauKai","Klee One",var(--font);box-shadow:inset 26px 0 0 -24px #e59a9a;line-height:28px}
+.dg-handwritten .dg-title{color:#1d4f91}
+.dg-handwritten .dg-box{background:transparent;border:0;padding:0}
+.dg-handwritten .dg-grid{grid-template-columns:1fr}
+.dg-handwritten .dg-desc{color:#5a6475}
+.dg-handwritten li.hot{color:#c0392b}
+.dg-handwritten li.warn{color:#b9770e}
+.dg-blueprint{background:#0d3b6e;background-image:linear-gradient(rgba(255,255,255,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.09) 1px,transparent 1px);background-size:20px 20px;
+  padding:14px;border-radius:6px;font-family:ui-monospace,"SF Mono",Menlo,var(--font);color:#e6f1ff;text-shadow:none}
+.dg-blueprint .dg-title{color:#fff;border-bottom:1px solid rgba(255,255,255,.5);padding-bottom:6px}
+.dg-blueprint .dg-box{background:rgba(13,59,110,.75);border:1px dashed rgba(255,255,255,.7);border-radius:2px}
+.dg-blueprint .dg-desc{color:#a9c7ea}
+.dg-actionplan .dg-todo{align-items:flex-start;padding:4px 0}
+.dg-actionplan .dg-todo>span{display:flex;flex-direction:column}
+.dg-actionplan .dg-todo small{color:var(--muted)}
+.dg-actionplan .dg-todo input:checked+span>span{text-decoration:line-through;color:var(--muted)}
+.dg-iceberg{gap:0;border-radius:var(--r);overflow:hidden}
+.dg-iceberg .dg-title{padding:10px 12px 0}
+.dg-above{background:linear-gradient(rgba(170,215,240,.22),rgba(170,215,240,.08));padding:10px 12px}
+.dg-water{height:6px;background:repeating-linear-gradient(90deg,#6fd0c0 0 14px,transparent 14px 22px)}
+.dg-below{background:linear-gradient(rgba(10,60,110,.55),rgba(3,15,35,.85));padding:10px 12px}
+.dg-zone{margin:0 0 6px;font-size:.8rem;color:var(--accent);font-weight:600}
+.dg-ice{margin:0 0 6px;font-size:.92rem}
+.dg-ice small{display:block;color:var(--muted);font-size:.78rem}
 </style>
 
 </head>
@@ -450,7 +503,7 @@ const S = {entries: [], cards: [], sessions: [], flip: null, db: null, sample: n
   maxImg: 0, files: [], prevUrls: [], busy: false, ctl: null, open: {}, le: false, lc: false, ls: false,
   web: false, recsBusy: false, recsTried: false,
   goalLoaded: false, defsLoaded: false, calmTouched: false, form: null, cfBusy: false,
-  reveal: {}, rdraft: {}, vdraft: {}, paste: {}};
+  reveal: {}, rdraft: {}, vdraft: {}, paste: {}, digests: [], dig: {}, digBusy: null};
 
 /* ---------- helpers ---------- */
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -904,7 +957,11 @@ function renderRecords(){
     for (const v of chs.values()) n += v.length;
     left.style.minWidth = '0'; left.append(el('h3', null, bk));
     const ty = typeFor(bk); if (ty) left.append(el('span', 'tag', ty));
-    h.append(left, el('span', 'msg', n + ' 條')); box.append(h);
+    const right = el('div', 'row'), dst = S.dig[bk], dgb = btn(dst && dst.open ? '收起整理' : '整理全書');
+    dgb.onclick = () => { const st = S.dig[bk] || (S.dig[bk] = {kind: 'visualnotes', paste: null}); st.open = !st.open; renderRecords(); };
+    right.append(el('span', 'msg', n + ' 條'), dgb);
+    h.append(left, right); box.append(h);
+    if (dst && dst.open) box.append(digestPanel(bk));
     const keys = [...chs.keys()].sort((x, y) => x === NOCHAP ? 1 : y === NOCHAP ? -1 : x.localeCompare(y, 'zh-Hant', {numeric: true}));
     for (const k of keys) {
       const d = el('details', 'chap'), key = bk + '|' + k;
@@ -915,6 +972,219 @@ function renderRecords(){
       d.append(sm, list); box.append(d);
     }
   }
+}
+
+/* ---------- 全書整理：十種版式，原料只限該書已存記錄 ---------- */
+const DG = [
+  ['visualnotes', '視覺筆記', '全書重點，用短句分格，一眼看完',
+    '題：一句概括全書。然後 4 至 8 個「節：概念名｜一句說明」，每節下 1 至 3 行「點：短句（20 字內）」。'],
+  ['mentalmodels', '概念關係圖', '核心概念畫成關係圖',
+    '最多 8 個「節：概念名｜操作定義一句」，再寫最多 12 行「連：概念甲 → 概念乙｜關係」，關係用動詞（導致、限制、是前提、對立、組成、強化）。連線兩端必須是上面節的名稱，一字不差。'],
+  ['chaptermap', '章節地圖', '逐章一格，顯示各章怎樣串連',
+    '每章一個「節：章名｜該章一句主旨」，按原書章次排列；每章下 1 至 3 行「點：重點」。相鄰兩章之間寫一行「連：上一章名 → 下一章名｜怎樣承接」。記錄沒有的章節不要寫。'],
+  ['themes', '主題網', '貫穿全書的主題，連到人物、例子或情節',
+    '最多 5 個「節：主題名｜一句說明」，每個主題下 2 至 4 行「點：書中的人物、例子或情節（章節）」。'],
+  ['quotes', '金句海報', '最經典的句子，文字排版成海報',
+    '題：海報標題。然後最多 8 行「句：句子｜出處章節」。只可用記錄中明確屬於作者原文的句子，每句 30 字內；沒有原文的，可用我的重述，出處寫「我的重述」。不要自己創作金句。'],
+  ['handwritten', '手寫筆記', '好像同學借你的筆記本',
+    '題：筆記標題。然後 4 至 7 個「節：小標題」，每節下 2 至 4 行「點：口語化短句」，重要的在句首加「重要！」，易錯的加「小心：」。'],
+  ['blueprint', '藍圖', '工程圖風格拆解全書結構和核心方法',
+    '題：全書要解決的核心問題。然後依次寫「節：輸入｜…」「節：機制｜…」「節：約束｜…」「節：輸出｜…」，每節下 1 至 3 行「點：組件」；再寫「節：方法步驟｜…」，下面每步一行「點：步驟」。最後用「連：甲 → 乙｜流向」寫出各節之間的流向。'],
+  ['timeline', '時間線', '按時間整理情節、事件或作者思路',
+    '題：一句說明這條時間線按甚麼排列。然後按先後次序寫 4 至 10 個「節：時間點或階段｜一句說明」，每節下 0 至 2 行「點：細節」。書中沒有時間，就按作者思路的推進階段排列。'],
+  ['actionplan', '行動清單', '把道理變成可照做的清單',
+    '分三個「節：今日」「節：這星期」「節：這個月」，每節下 2 至 4 行「做：具體行動｜可觀察的完成標準」。行動要對應我當前的問題，並標明來自書中哪一個主張。'],
+  ['iceberg', '冰山圖', '水面上是表面觀點，水面下是深層原因',
+    '題：一句概括。然後最多 5 行「上：表面情節或觀點」，最多 6 行「下：深層意義、原因或隱含假設｜對應哪條上層」。']
+];
+const DGK = Object.fromEntries(DG.map(d => [d[0], d]));
+const hid = s => { let h = 5381; for (const ch of String(s)) h = ((h * 33) ^ ch.codePointAt(0)) >>> 0; return h.toString(36); };
+const dgId = (bk, kind) => 'g' + hid(bk) + '-' + kind;
+function bookMaterial(bk){
+  const list = S.entries.filter(e => bookOf(e) === bk).slice().sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  const L = []; let n = 0;
+  for (const e of list) {
+    const parts = ['〔' + (e.chapter || NOCHAP) + '｜' + (e.mode === 'B' ? '篩書' : '內文頁') + '〕'];
+    if (e.note) parts.push('我的重述：' + e.note);
+    if (e.answer) parts.push('答覆：' + e.answer.slice(0, 3000));
+    const t = parts.join('\n');
+    if (n + t.length > 42000) { L.push('（較後的記錄因長度略去）'); break; }
+    L.push(t); n += t.length;
+  }
+  return {text: L.join('\n\n'), count: list.length};
+}
+function digestPrompt(bk, kind){
+  const d = DGK[kind], m = bookMaterial(bk), goal = $('goal').value.trim();
+  return ['你是閱讀整理者。任務：' + d[1] + '（' + d[2] + '）。書名：' + bk + '。',
+    '',
+    '原料只限下面「我的閱讀記錄」：我的重述，以及答覆中屬於作者原文或核對結果的部分。記錄沒有覆蓋的章節、人物或情節，不要補；全書整理只代表我已讀的部分。不要編造引文、頁碼、數據或情節；你自己的推論在句末標「（推論）」。',
+    goal ? '我當前要解決的問題：' + goal : '',
+    '',
+    '輸出規則：只用下列行格式，每行一項，不要開場白、總結、Markdown 符號或其他文字。',
+    '可用的行：「題：」「節：名稱｜說明」「點：」「連：甲 → 乙｜關係」「句：句子｜出處」「做：行動｜完成標準」「上：」「下：文字｜對應」。「點」「做」屬於它上面最近的「節」。',
+    '這次的內容：' + d[3],
+    '繁體中文書面語，每行盡量短。',
+    '',
+    '我的閱讀記錄（共 ' + m.count + ' 條，按時間先後）：',
+    m.text].filter(x => x !== '').join('\n');
+}
+function parseDigest(raw){
+  const o = {title: '', groups: [], links: [], quotes: [], todos: [], above: [], below: []};
+  let g = null;
+  const two = s => { const i = s.search(/[｜|]/); return i < 0 ? [s.trim(), ''] : [s.slice(0, i).trim(), s.slice(i + 1).trim()]; };
+  for (let line of String(raw || '').split('\n')) {
+    line = line.replace(/^[\s>*#•\-]+/, '').replace(/\*\*/g, '').trim();
+    const m = /^(題|節|點|連|句|做|上|下)\s*[:：]\s*(.*)$/.exec(line);
+    if (!m || !m[2]) continue;
+    const k = m[1], v = m[2].trim();
+    if (k === '題') o.title = o.title || v;
+    else if (k === '節') { const [name, desc] = two(v); g = {name, desc, items: [], todos: []}; o.groups.push(g); }
+    else if (k === '點') { if (!g) { g = {name: '', desc: '', items: [], todos: []}; o.groups.push(g); } g.items.push(v); }
+    else if (k === '連') { const [ab, rel] = two(v), p = ab.split(/\s*(?:→|->|⟶)\s*/); if (p.length >= 2 && p[0] && p[1]) o.links.push({a: p[0], b: p[1], rel}); }
+    else if (k === '句') { const [t, src] = two(v); o.quotes.push({t: t.replace(/^[「『“"]|[」』”"]$/g, ''), src}); }
+    else if (k === '做') { const [t, how] = two(v), td = {t, how, group: g ? g.name : ''}; o.todos.push(td); if (g) g.todos.push(td); }
+    else if (k === '上') o.above.push(v);
+    else { const [t, ref] = two(v); o.below.push({t, ref}); }
+  }
+  o.empty = !o.title && !o.groups.length && !o.links.length && !o.quotes.length && !o.todos.length && !o.above.length && !o.below.length;
+  return o;
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs, text) => { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; };
+const cut = (s, n) => [...s].length > n ? [...s].slice(0, n - 1).join('') + '…' : s;
+function groupBox(g, cls){
+  const b = el('div', cls || 'dg-box');
+  if (g.name) b.append(el('h4', null, g.name));
+  if (g.desc) b.append(el('p', 'dg-desc', g.desc));
+  if (g.items.length) { const ul = el('ul'); for (const t of g.items) ul.append(el('li', /^重要[!！]/.test(t) ? 'hot' : /^小心[:：]/.test(t) ? 'warn' : null, t)); b.append(ul); }
+  return b;
+}
+function linkList(o){ const ul = el('ul', 'dg-links'); for (const l of o.links) ul.append(el('li', null, l.a + ' → ' + l.b + (l.rel ? '：' + l.rel : ''))); return ul; }
+function conceptMap(o){
+  const names = o.groups.map(g => g.name).filter(Boolean);
+  const find = n => names.findIndex(x => x === n || x.includes(n) || n.includes(x));
+  for (const l of o.links) for (const n of [l.a, l.b]) if (find(n) < 0 && names.length < 12) names.push(n);
+  const N = names.length, W = 420, H = 380, R = N > 1 ? 140 : 0, cx = W / 2, cy = H / 2;
+  const pos = names.map((_, i) => [cx + R * Math.cos(-Math.PI / 2 + 2 * Math.PI * i / N), cy + R * Math.sin(-Math.PI / 2 + 2 * Math.PI * i / N)]);
+  const svg = svgEl('svg', {viewBox: '0 0 ' + W + ' ' + H, class: 'dg-svg', role: 'img', 'aria-label': '概念關係圖'});
+  const defs = svgEl('defs'), mk = svgEl('marker', {id: 'dgArrow', viewBox: '0 0 10 10', refX: '9', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse'});
+  mk.append(svgEl('path', {d: 'M0,0 L10,5 L0,10 z', class: 'dg-arrow'})); defs.append(mk); svg.append(defs);
+  for (const l of o.links) {
+    const i = find(l.a), j = find(l.b); if (i < 0 || j < 0 || i === j) continue;
+    const [x1, y1] = pos[i], [x2, y2] = pos[j], dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1, k = 44 / d;
+    svg.append(svgEl('line', {x1: x1 + dx * k, y1: y1 + dy * k, x2: x2 - dx * k, y2: y2 - dy * k, class: 'dg-edge', 'marker-end': 'url(#dgArrow)'}));
+    if (l.rel) svg.append(svgEl('text', {x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 4, class: 'dg-rel', 'text-anchor': 'middle'}, cut(l.rel, 6)));
+  }
+  names.forEach((n, i) => {
+    const [x, y] = pos[i];
+    svg.append(svgEl('rect', {x: x - 48, y: y - 17, width: 96, height: 34, rx: 9, class: 'dg-node'}));
+    svg.append(svgEl('text', {x, y: y + 5, class: 'dg-label', 'text-anchor': 'middle'}, cut(n, 7)));
+  });
+  return svg;
+}
+function renderDigest(kind, o, doc){
+  const root = el('div', 'dg dg-' + kind);
+  if (o.title) root.append(el('h4', 'dg-title', o.title));
+  if (kind === 'mentalmodels') {
+    root.append(conceptMap(o));
+    if (o.groups.length) { const g = el('div', 'dg-grid'); for (const x of o.groups) g.append(groupBox(x)); root.append(g); }
+    if (o.links.length) root.append(linkList(o));
+  } else if (kind === 'chaptermap' || kind === 'timeline') {
+    const flow = el('div', 'dg-flow');
+    o.groups.forEach((g, i) => {
+      if (i) { const l = o.links.find(x => x.b === g.name || (x.b && g.name.includes(x.b))); flow.append(el('div', 'dg-join', l && l.rel ? '↓ ' + l.rel : '↓')); }
+      flow.append(groupBox(g, 'dg-box dg-step'));
+    });
+    root.append(flow);
+  } else if (kind === 'quotes') {
+    for (const q of o.quotes) { const f = el('figure', 'dg-quote'); f.append(el('blockquote', null, q.t)); if (q.src) f.append(el('figcaption', null, '— ' + q.src)); root.append(f); }
+  } else if (kind === 'actionplan') {
+    const done = new Set(Array.isArray(doc && doc.done) ? doc.done : []);
+    const groups = o.groups.filter(g => g.todos.length), loose = o.todos.filter(t => !t.group);
+    if (loose.length) groups.push({name: '', todos: loose});
+    let idx = 0;
+    for (const g of groups) {
+      const b = el('div', 'dg-box'); if (g.name) b.append(el('h4', null, g.name));
+      for (const t of g.todos) {
+        const i = idx++, lab = el('label', 'check dg-todo'), cb = el('input'); cb.type = 'checkbox'; cb.checked = done.has(i);
+        const sp = el('span'); sp.append(el('span', null, t.t)); if (t.how) sp.append(el('small', null, '完成標準：' + t.how));
+        cb.onchange = async () => {
+          if (cb.checked) done.add(i); else done.delete(i);
+          if (doc && S.db) try { await S.db.doc('digests/' + doc.id).update({done: [...done].sort((a, b) => a - b), updatedAt: Date.now()}); } catch (e) {}
+        };
+        lab.append(cb, sp); b.append(lab);
+      }
+      root.append(b);
+    }
+  } else if (kind === 'iceberg') {
+    const up = el('div', 'dg-above'), down = el('div', 'dg-below');
+    up.append(el('p', 'dg-zone', '水面上：表面'));
+    for (const t of o.above) up.append(el('p', 'dg-ice', t));
+    down.append(el('p', 'dg-zone', '水面下：深層'));
+    for (const b of o.below) { const p = el('p', 'dg-ice', b.t); if (b.ref) p.append(el('small', null, '對應：' + b.ref.replace(/^對應[:：\s]*/, ''))); down.append(p); }
+    root.append(up, el('div', 'dg-water'), down);
+  } else {
+    const g = el('div', 'dg-grid'); for (const x of o.groups) g.append(groupBox(x)); root.append(g);
+    if (o.links.length) root.append(linkList(o));
+  }
+  return root;
+}
+function digestPanel(bk){
+  const st = S.dig[bk];
+  const box = el('div', 'card dg-panel'), top = el('div', 'row');
+  const sel = el('select'); sel.setAttribute('aria-label', '整理版式');
+  for (const d of DG) sel.append(new Option('/' + d[0] + '　' + d[1], d[0]));
+  sel.value = st.kind; sel.style.width = 'auto'; sel.style.flex = '1';
+  sel.onchange = () => { st.kind = sel.value; st.paste = null; renderRecords(); };
+  const doc = S.digests.find(x => x.id === dgId(bk, st.kind)), busy = S.digBusy === bk;
+  const go = btn(doc ? '重新生成' : '生成', 'primary'); go.disabled = !!S.digBusy;
+  top.append(sel, go); box.append(top);
+  box.append(el('p', 'msg', DGK[st.kind][2] + '。只用這本書已存的 ' + S.entries.filter(e => bookOf(e) === bk).length + ' 條記錄；未讀的部分不會出現。'));
+  const live = el('p', 'answer dg-live'); live.hidden = !busy; if (busy) live.textContent = st.live || '整理中…通常需要半分鐘至兩分鐘。';
+  const sayP = el('p', 'msg'); sayP.hidden = !st.err; sayP.textContent = st.err || '';
+  box.append(live, sayP);
+  const save = async text => {
+    if (parseDigest(text).empty) return false;
+    await S.db.doc('digests/' + dgId(bk, st.kind)).set({bookTitle: bk, kind: st.kind, text: text.trim(), done: [], createdAt: doc ? doc.createdAt || Date.now() : Date.now(), updatedAt: Date.now()});
+    return true;
+  };
+  go.onclick = async () => {
+    if (!S.db || S.digBusy) return;
+    const prompt = digestPrompt(bk, st.kind); st.err = '';
+    if (!S.sample) {
+      let copied = false;
+      try { await navigator.clipboard.writeText(prompt); copied = true; } catch (e) {}
+      Object.assign(st, {paste: '', prompt, copied}); renderRecords(); return;
+    }
+    S.digBusy = bk; st.live = ''; renderRecords();
+    try {
+      const r = await S.sample(prompt, {onText: ({text}) => { st.live = text; const q = $('records').querySelector('.dg-live'); if (q) q.textContent = text; }});
+      if (!(await save(r.text))) st.err = '答覆不符合格式，未儲存，請再試。';
+    } catch (e) { st.err = errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + '）'; }
+    S.digBusy = null; renderRecords();
+  };
+  if (st.paste != null) {
+    const f = el('div', 'vform');
+    f.append(el('p', 'msg', st.copied ? '已複製提問文字。到 Claude 貼上取得答覆，再貼回下面。' : '未能自動複製：請複製下面的提問文字，到 Claude 取得答覆。'));
+    if (!st.copied) { const pr = el('textarea'); pr.readOnly = true; pr.value = st.prompt || ''; pr.setAttribute('aria-label', '提問文字'); f.append(pr); }
+    const ta = el('textarea'); ta.maxLength = 30000; ta.placeholder = '貼上答覆'; ta.setAttribute('aria-label', '整理答覆'); ta.value = st.paste; ta.oninput = () => { st.paste = ta.value; };
+    const ok = btn('儲存答覆', 'primary'), cancel = btn('取消'), row = el('div', 'row');
+    cancel.onclick = () => { st.paste = null; renderRecords(); };
+    ok.onclick = async () => {
+      ok.disabled = true;
+      try { if (await save(ta.value)) { st.paste = null; st.err = ''; } else { st.err = '答覆不符合格式，未儲存。'; ok.disabled = false; } }
+      catch (e) { st.err = '未能儲存，請再試。'; ok.disabled = false; }
+      renderRecords();
+    };
+    row.append(ok, cancel); f.append(ta, row); box.append(f);
+  }
+  if (doc && !busy) {
+    box.append(el('p', 'time', '生成於 ' + fmt(doc.updatedAt || doc.createdAt)), renderDigest(st.kind, parseDigest(doc.text), doc));
+    const del = btn('刪除這份整理', 'danger'); del.style.alignSelf = 'flex-start';
+    confirmBtn(del, '刪除這份整理', () => S.db.doc('digests/' + doc.id).delete());
+    box.append(del);
+  }
+  return box;
 }
 
 /* ---------- model cards: validation queue + spaced repetition ---------- */
@@ -1257,7 +1527,7 @@ $('expJson').onclick = async () => {
     for (const e of S.entries) for (const id of (e.assetIds || [])) ids.add(id);
     let miss = 0;
     for (const id of ids) { try { const b = await getBlob(id); if (b) images[id] = await blobToDataUrl(b); else miss++; } catch (e) { miss++; } }
-    const data = {app: '睇書記錄', format: 2, exportedAt: new Date().toISOString(), entries: S.entries, cards: S.cards, sessions: S.sessions,
+    const data = {app: '睇書記錄', format: 2, exportedAt: new Date().toISOString(), entries: S.entries, cards: S.cards, sessions: S.sessions, digests: S.digests,
       practice: {goal: $('goal').value.trim(), calm: $('defCalm').value.trim(), reason: $('defReason').value.trim()}, images};
     const st = await saveFile('睇書記錄-備份-' + stamp() + '.json', JSON.stringify(data));
     msgTo('bkSay', (st === 'saved' ? '已匯出：記錄 ' + S.entries.length + ' 條、相片 ' + Object.keys(images).length + ' 張、模型卡 ' + S.cards.length + ' 張。' : '已交出檔案。') + (miss ? '有 ' + miss + ' 張相片讀取失敗。' : ''));
@@ -1287,6 +1557,10 @@ function toMarkdown(){
       L.push('');
     }
   }
+  if (S.digests.length) {
+    L.push('## 全書整理', '');
+    for (const g of S.digests) L.push('### ' + (g.bookTitle || NOBOOK) + ' · ' + (DGK[g.kind] ? DGK[g.kind][1] : g.kind), '', g.text || '', '');
+  }
   if (S.sessions.length) {
     L.push('## 入定與推理', '');
     for (const s of S.sessions) L.push('- ' + fmt(s.createdAt) + ' · ' + s.kind + (s.minutes ? ' · ' + s.minutes + ' 分鐘' : '') + (s.text ? '：' + s.text : '') + (s.conclusion ? '（結論：' + s.conclusion + '）' : ''));
@@ -1305,7 +1579,7 @@ $('impFile').onchange = async () => {
   if (!data || data.app !== '睇書記錄' || !Array.isArray(data.entries)) { msgTo('bkSay', '這個檔案不是睇書記錄的備份。'); return; }
   msgTo('bkSay', '匯入中…');
   const okId = id => typeof id === 'string' && /^[A-Za-z0-9_\-~:@+][A-Za-z0-9_\-.~:@+]{0,199}$/.test(id);
-  const imgMap = {}, n = {e: 0, c: 0, s: 0, skip: 0, img: 0};
+  const imgMap = {}, n = {e: 0, c: 0, s: 0, d: 0, skip: 0, img: 0};
   const put = async (coll, have, items, fix) => {
     for (const it of Array.isArray(items) ? items : []) {
       if (!it || typeof it !== 'object' || !okId(it.id) || have.has(it.id)) { n.skip++; continue; }
@@ -1327,13 +1601,14 @@ $('impFile').onchange = async () => {
     });
     await put('cards', new Set(S.cards.map(x => x.id)), data.cards);
     await put('sessions', new Set(S.sessions.map(x => x.id)), data.sessions);
+    if (Array.isArray(data.digests)) await put('digests', new Set(S.digests.map(x => x.id)), data.digests);
     const p = data.practice || {};
     if (p.goal && !$('goal').value.trim()) { $('goal').value = p.goal; await S.db.doc('practice/goal').set({text: p.goal, updatedAt: Date.now()}); }
     if ((p.calm || p.reason) && !$('defCalm').value.trim() && !$('defReason').value.trim()) {
       $('defCalm').value = p.calm || ''; $('defReason').value = p.reason || '';
       await S.db.doc('practice/defs').set({calm: p.calm || '', reason: p.reason || '', updatedAt: Date.now()});
     }
-    msgTo('bkSay', '已匯入：記錄 ' + n.e + ' 條、模型卡 ' + n.c + ' 張、入定推理 ' + n.s + ' 節。' + (n.skip ? '已存在或無效的 ' + n.skip + ' 項略過。' : '') + (n.img ? '有 ' + n.img + ' 張相片未能匯入。' : ''));
+    msgTo('bkSay', '已匯入：記錄 ' + n.e + ' 條、模型卡 ' + n.c + ' 張、入定推理 ' + n.s + ' 節' + (n.d ? '、全書整理 ' + n.d + ' 份' : '') + '。' + (n.skip ? '已存在或無效的 ' + n.skip + ' 項略過。' : '') + (n.img ? '有 ' + n.img + ' 張相片未能匯入。' : ''));
   } catch (e) { msgTo('bkSay', (e && e.code === 'quota_exceeded' ? '記錄庫已滿，' : '') + '匯入中途失敗：已匯入記錄 ' + n.e + ' 條、模型卡 ' + n.c + ' 張；再匯入一次會略過已存在的項目。'); }
 };
 
@@ -1509,6 +1784,9 @@ async function start(){
     S.cards = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); S.lc = true; loaded();
     renderCards(); renderRecords(); renderPractice(); renderCardCheck();
   }, dead);
+  S.db.collection('digests').onSnapshot(s => {
+    S.digests = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); renderRecords();
+  }, () => {});
   S.db.collection('sessions').onSnapshot(s => {
     S.sessions = newestFirst(s.docs.map(d => ({id: d.id, ...d.data()}))); S.ls = true; renderPractice();
   }, dead);
