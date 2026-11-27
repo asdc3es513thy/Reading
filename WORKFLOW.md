@@ -9,22 +9,22 @@
 | | Claude 版 | Vercel 網頁版 | GitHub 版 |
 |---|---|---|---|
 | 打開 | Claude app → Artifacts →「睇書記錄」 | 你的 Vercel 網址 | https://asdc3es513thy.github.io/Reading/ |
-| 答覆 | Claude 自動答覆 | OpenRouter 自動答覆，Mistral、Gemini 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
+| 答覆 | Claude 自動答覆 | Gemini Pro 自動答覆，Flash、OpenRouter、Mistral 後備（要通行碼） | 複製提問 → 自己去 AI 對話 → 貼上答覆 |
 | 新書推介 | 沒有 | 有（每星期自動） | 沒有 |
 | 記錄存放 | Claude 帳戶，換裝置仍在 | 只在該裝置的瀏覽器 | 只在該裝置的瀏覽器 |
 
 - 三個版本的記錄**互不相通**，只能用「匯出／匯入備份」搬（見第七節）。
 - 頁底的版本號三邊相同，即代表程式已同步。
-- 答覆深度：Claude 版最深入。Vercel 版先用 OpenRouter 免費模型（Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra），再 Mistral（Large 4，再 Medium 3.5）；出錯、額度用完或輸入太長，自動改用 Gemini（先 Pro 後 Flash）。三個引擎都要求最高推理深度。中國公司的模型（DeepSeek、Qwen、GLM、Kimi、MiniMax、ERNIE 等及其衍生模型）一律不用，`openrouter/free` 會隨機路由到它們，所以也排除；環境變數列了也會被略過。
+- 答覆深度：Claude 版最深入。Vercel 版先用 Gemini Pro（`gemini-3.1-pro-preview`），額度用完或太忙改用 Gemini 3.8 Flash，再不行就 OpenRouter 免費模型（Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra），最後 Mistral（Large 4，再 Medium 3.5）。「全書整理」十種版式只是排版，直接用 Flash，留 Pro 額度給篩書和核對。每條記錄底的「答覆來源」顯示實際用了哪個模型。三個引擎都要求最高推理深度。中國公司的模型（DeepSeek、Qwen、GLM、Kimi、MiniMax、ERNIE 等及其衍生模型）一律不用，`openrouter/free` 會隨機路由到它們，所以也排除；環境變數列了也會被略過。
 
 ---
 
 ## 二、第一次設定（只做一次，Vercel 版用）
 
 1. **取得金鑰**（金鑰不要貼在任何對話，也不要放上 GitHub；外洩了就即刻刪除、重開）：
-   - 第一引擎 OpenRouter（香港免 VPN）：openrouter.ai → Keys → Create Key。
-   - 第二引擎 Mistral：console.mistral.ai → API Keys → Create new key。
-   - 後備 Gemini（新書推介也要用）：aistudio.google.com → Get API key → Create API key。
+   - 第一引擎 Gemini（新書推介也要用）：aistudio.google.com → Get API key → Create API key。
+   - 後備 OpenRouter（香港免 VPN）：openrouter.ai → Keys → Create Key。
+   - 後備 Mistral：console.mistral.ai → API Keys → Create new key。
 2. **Vercel 加環境變數**：專案 → Settings → Environment Variables（手機版在「☰」選單內），類型揀 Secret：
    - `OPENROUTER_API_KEY`：OpenRouter 金鑰
    - `MISTRAL_API_KEY`：Mistral 金鑰
@@ -41,7 +41,8 @@
 |---|---|---|
 | `OPENROUTER_MODELS` | OpenRouter 模型次序，逗號分隔 | `nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free` |
 | `MISTRAL_MODELS` | Mistral 模型次序，逗號分隔 | `mistral-large-4-0,mistral-medium-3-5` |
-| `GEMINI_MODEL` | Gemini 模型次序，逗號分隔 | `gemini-3.8-pro,gemini-3.8-flash` |
+| `GEMINI_MODEL` | Gemini 模型次序，逗號分隔 | `gemini-3.1-pro-preview,gemini-3.8-flash` |
+| `ENGINE_ORDER` | 引擎次序，逗號分隔 | `gemini,openrouter,mistral` |
 | `GEMINI_THINKING` | 思考深度 `LOW`／`MEDIUM`／`HIGH`／`XHIGH`／`OFF` | `XHIGH` |
 
 ---

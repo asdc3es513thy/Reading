@@ -249,7 +249,8 @@ def api_check():
     check(o['configuredGet'] is True and o['wrongPass'] == 401, 'API：通行碼錯誤回 401')
     check(o['noPrompt'] == 400 and o['tooMany'] == 413 and o['badType'] == 400, 'API：無效提問和相片被拒')
     check(o['okStatus'] == 200 and o['lines'][-1].get('done') and ''.join(l.get('t', '') for l in o['lines']) == '書名：《測試》\n【核對】一。', 'API：串流答覆完整')
-    check('gemini-3.8-pro:streamGenerateContent' in o['path'] and o['key'] == 'test-key', 'API：用 Gemini 金鑰，預設先試 Pro')
+    check('gemini-3.1-pro-preview:streamGenerateContent' in o['path'] and o['key'] == 'test-key', 'API：用 Gemini 金鑰，預設先試 Pro（gemini-3.1-pro-preview）')
+    check('gemini-3.8-flash' in o['lightPath'], 'API：light 請求（全書整理）略過 Pro，直接用 Flash')
     check(o['nopro'].get('done') is True and len(o['noproPaths']) == 2 and 'gemini-3.8-flash' in o['noproPaths'][1], 'API：Pro 用不到時自動改用 Flash')
     check(o['parts'][0] == {'inlineData': {'mimeType': 'image/png', 'data': 'AAAA'}} and o['parts'][-1] == {'text': '提問'}, 'API：相片在前、提問在後')
     check({k: o['long'][k] for k in ('done', 'truncated', 'stop')} == {'done': True, 'truncated': True, 'stop': 'MAX_TOKENS'}, 'API：答覆過長標示截短')
@@ -279,6 +280,9 @@ def api_check():
     check(o['ghJson'][0] == {'t': '書名：《JSON》'} and o['ghJson'][-1].get('provider') == 'mistral', 'API：一次過 JSON 答覆也讀得到')
     check(o['allDown'].get('error') == 'upstream' and o['allDown'].get('detail', '').startswith('mistral') and '；gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時列出每個引擎的原因')
     check(o['quota'].get('error') == 'rate_limited' and o['quota'].get('detail') == 'gemini 429 You exceeded your current quota, please check your plan.', 'API：錯誤原因只顯示最內層訊息')
+    check(o['defaultOrder'] == ['gemini', 'openrouter', 'mistral'] and o['defaultFirst'].get('provider') == 'gemini' and o['defaultFirstPath'].startswith('/v1/models/gemini-3.1-pro-preview'), 'API：預設 Gemini 排第一，先用 Pro')
+    q = o['geminiQuotaPaths']
+    check(o['geminiQuota'].get('provider') == 'openrouter' and 'gemini-3.1-pro-preview' in q[0] and 'gemini-3.8-flash' in q[1] and q[2] == 'nvidia/nemotron-3.5-super-vl:free', 'API：Gemini Pro、Flash 額度用完時改用 OpenRouter')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')
 
 if __name__ == '__main__':
