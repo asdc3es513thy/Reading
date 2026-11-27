@@ -2,6 +2,8 @@
 
 用戶以繁體中文（粵語口吻）溝通；介面文字一律用繁體中文書面語。用戶要求「不需迎合」：有問題直接講。
 
+**基準**：Claude 版是睇書記錄的正式基準（記錄、模型卡、複習以它為準）；Vercel 網頁版（Gemini → OpenRouter）主要方便在 iPad 使用，記錄要靠匯出／匯入備份搬回 Claude 版。2026-11-27 起 Claude 版改用新 artifact（舊 BpatGZuPqyWHMYNGSt6ksF 停用，資料用備份搬）。
+
 ## 結構
 
 - `src/reading-log.src.html`：唯一原始檔（HTML＋CSS＋JS）。`@@BG@@`、`@@VERSION@@` 由 `build.py` 代入。
@@ -15,7 +17,7 @@
 1. 只改 `src/`，不要手改 `index.html` 或 `METHOD.md`。
 2. 把 `src/VERSION` 改為當日日期，然後執行 `python3 build.py`。
 3. 執行 `python3 tests/test_local.py` 和 `python3 tests/test_claude.py`，全部要通過。新功能要加測試。
-4. Claude 版：用 Artifact 工具把 `dist/reading-log.html` 發佈到 https://claude.ai/artifact/BpatGZuPqyWHMYNGSt6ksF （傳入 `url`）。capabilities 維持 `{db:{}, sample:{images:true}, assets:{}, downloads:true}`。
+4. Claude 版：用 Artifact 工具把 `dist/reading-log.html` 發佈到 https://claude.ai/artifact/Q1Yib8dxFKMS3oDuWfEbKH （傳入 `url`）。capabilities 維持 `{db:{}, sample:{images:true}, assets:{}, downloads:true}`。
 5. GitHub 版：在分支 commit `src/`、`index.html`、`METHOD.md` 及相關檔案，推送後由用戶合併到 `main`。不能推送時，把 `index.html` 等檔案交給用戶在 GitHub 網頁上載。
    - commit 作者要用用戶的 GitHub 帳戶（`asdc3es513thy <322116925+asdc3es513thy@users.noreply.github.com>`，`git config user.name／user.email`），否則 Vercel 免費版會擋住自動部署；Claude 以 `Co-Authored-By` 註明。不要用用戶的私人電郵。
 6. 兩邊頁底的版本號必須相同。
