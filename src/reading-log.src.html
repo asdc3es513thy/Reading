@@ -623,7 +623,9 @@ function buildPrompt(mode, c, note, nImg){
     '3. 證據分級：分清結論靠推導、數據、案例還是個人經驗；只有成功案例、沒有失敗樣本，可信度降一級。',
     '4. 第一性原理：把主張拆到不能再拆的基本事實或約束，分清事實與假設，只用基本事實一步一步重新推導，不靠類比、慣例或權威。',
     '5. 時間盒：每頁只深入最重要的一點，寧可少而深，不要多而淺。',
-    '6. 資料來源：「作者說過甚麼」只以圖中原文為準；圖中沒有的書本內容標明「模型記憶，未查證」；不編造頁碼、數據或引文；你不能上網，不要假裝查過；你自己的推論標明「推論」。',
+    c.web
+      ? '6. 資料來源：你可以用 Google 搜尋，作答前必須先搜尋，不可只憑封面或單頁推論：搜尋書名加作者，找全書目錄、出版資料、作者背景、主要書評、學術或專業批評、同主題證據更強的書或研究。「作者說過甚麼」以圖中原文或搜尋到的可靠來源為準，後者標明「網上來源」；搜尋不到的才標「模型記憶，未查證」；不編造頁碼、數據或引文；你自己的推論標明「推論」。'
+      : '6. 資料來源：「作者說過甚麼」只以圖中原文為準；圖中沒有的書本內容標明「模型記憶，未查證」；不編造頁碼、數據或引文；你不能上網，不要假裝查過；你自己的推論標明「推論」。',
     '7. 推理要用機制：推導時應該引用該領域已確立的認知、物理、經濟或統計規律作為齒輪，標明「領域機制」；這不算編造書本內容。書頁資料少，不是停在「無法判斷」的理由，要改用領域機制推導。',
     '',
     '用戶當前要解決的問題：' + (c.question || '未提供'),
@@ -645,7 +647,9 @@ function buildPrompt(mode, c, note, nImg){
   ];
   if (mode === 'B') return head.concat([
     '這是封面、目錄或前言，用途是篩書。用戶未讀內文，沒有重述。',
-    '圖中資料少：「封面（或目錄）未展示」全篇最多說一次；【第一性原理】和【解構】改為推導這本書方法所屬領域的已知機制，判斷這個方法在甚麼條件下成立或失效。',
+    c.web
+      ? '圖中資料少，先用搜尋補足：全書目錄和各章主旨、作者的核心論點和證據、專業書評和批評。【核心主張】按搜尋到的目錄和論點寫，不要只從書名和副標題推斷；【背景與批評】要具體寫出搜尋到的批評者或來源和他們的論點；【第一性原理】和【解構】針對這本書的具體論點推導，不要只寫領域通論。'
+      : '圖中資料少：「封面（或目錄）未展示」全篇最多說一次；【第一性原理】和【解構】改為推導這本書方法所屬領域的已知機制，判斷這個方法在甚麼條件下成立或失效。',
     '開頭三行固定格式，每行一項：',
     titleRule,
     '章節：寫「封面」「目錄」或「前言」。',
@@ -676,7 +680,7 @@ function buildPrompt(mode, c, note, nImg){
 }
 function ctx(){
   const last = S.entries[0], t = last ? bookOf(last) : '';
-  return {title: t === NOBOOK ? '' : t, chapter: last ? (last.chapter || '') : '', question: $('goal').value.trim(), concepts: conceptsOf(t)};
+  return {title: t === NOBOOK ? '' : t, chapter: last ? (last.chapter || '') : '', question: $('goal').value.trim(), concepts: conceptsOf(t), web: S.web};
 }
 // 同一本書最近一次篩書答覆中的「核心概念」，供內文頁核對時對照
 function conceptsOf(t){
@@ -802,11 +806,11 @@ async function submit(withAnswer){
     S.ctl = new AbortController();
     try {
       const imgs = S.maxImg > 0 ? blobs : [];
-      const opts = {signal: S.ctl.signal, onText: ({text}) => { $('liveText').textContent = text; }};
+      const opts = {signal: S.ctl.signal, search: S.web, onText: ({text}) => { $('liveText').textContent = text; }};
       if (imgs.length) opts.images = imgs;
       const r = await S.sample(buildPrompt(mode, ctx(), note, imgs.length), opts);
       const p = parseAnswer(r.text);
-      Object.assign(rec, {answer: p.text, truncated: !!r.truncated, engine: r.engine || '', bookTitle: p.title, chapter: p.chapter, bookType: p.type || typeFor(p.title), cover: p.cover, wrong: p.wrong});
+      Object.assign(rec, {answer: p.text, truncated: !!r.truncated, engine: r.engine || '', sources: webLinks(r.sources), skipped: (r.skipped || []).slice(0, 6), bookTitle: p.title, chapter: p.chapter, bookType: p.type || typeFor(p.title), cover: p.cover, wrong: p.wrong});
     } catch (e) {
       const kept = e && e.text ? e.text : '';
       $('liveText').textContent = kept; $('live').hidden = !kept;
@@ -843,6 +847,8 @@ $('copyBtn').onclick = async () => {
     : '已儲存，但未能自動複製：在下面這條記錄按「複製提問文字」。'));
 };
 
+// 只保留 http(s) 連結，最多 20 個
+const webLinks = s => (Array.isArray(s) ? s : []).filter(x => x && /^https?:\/\//.test(x.uri || '')).slice(0, 20).map(x => ({title: String(x.title || x.uri).slice(0, 200), uri: x.uri}));
 /* ---------- records: book → chapter → entry ---------- */
 async function copyText(text, b, host){
   try { await navigator.clipboard.writeText(text); b.textContent = '已複製'; setTimeout(() => { b.textContent = '複製提問文字'; }, 2000); }
@@ -910,6 +916,14 @@ function entryNode(e){
     a.append(el('p', 'lbl', '答覆'), el('p', 'answer', e.answer));
     if (e.truncated) a.append(el('p', 'msg', '（答覆因長度被截短）'));
     if (e.engine) a.append(el('p', 'msg', '答覆來源：' + e.engine));
+    if (e.skipped && e.skipped.length) a.append(el('p', 'msg', '未能使用（已改用下一個）：' + e.skipped.join('；')));
+    const src = webLinks(e.sources);
+    if (src.length) {
+      const d = el('details', 'opt'), ul = el('ul', 'msg');
+      d.append(el('summary', null, '網上來源 ' + src.length + ' 個'));
+      for (const x of src) { const li = el('li'), l = el('a', 'link', x.title || x.uri); l.href = x.uri; l.target = '_blank'; l.rel = 'noopener noreferrer'; li.append(l); ul.append(li); }
+      d.append(ul); a.append(d);
+    }
   }
   const foot = el('div', 'row'), cards = S.cards.filter(c => c.sourceType === 'entry' && c.sourceId === e.id);
   if (!e.answer) {
@@ -2050,7 +2064,7 @@ function remoteSample(max){
     if (!end) throw {code: 'network', text};
     if (!text.trim()) throw {code: 'empty', detail: end.provider || ''};
     const engine = [ENGINE[end.provider] || end.provider, end.model].filter(Boolean).join(' · ');
-    return {text, truncated: !!end.truncated, sources: Array.isArray(end.sources) ? end.sources : [], engine};
+    return {text, truncated: !!end.truncated, sources: Array.isArray(end.sources) ? end.sources : [], skipped: Array.isArray(end.skipped) ? end.skipped.map(String) : [], engine};
   };
   ask.limits = async () => ({images: {maxCount: max}});
   return ask;

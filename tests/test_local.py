@@ -148,7 +148,7 @@ def web_mode(b, url, img):
             return route.fulfill(status=401, content_type='application/json', body='{"error":"bad_pass"}')
         if 'EMPTY' in body.get('prompt', '') or STATE.get('empty'):
             return route.fulfill(status=200, content_type='application/x-ndjson', body='{"done":true,"truncated":false,"provider":"mistral"}\n')
-        if body.get('search'):
+        if '你是選書顧問' in body.get('prompt', ''):
             done = {'done': True, 'truncated': False, 'sources': [{'title': '出版社新書頁', 'uri': 'https://example.com/new-book'}, {'title': '壞連結', 'uri': 'javascript:alert(1)'}]}
             lines = [json.dumps({'t': RECS}, ensure_ascii=False), json.dumps(done, ensure_ascii=False)]
             return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
@@ -160,7 +160,7 @@ def web_mode(b, url, img):
             text = ''.join('===版式：/' + k + '===\n' + DG_BODY + '\n' for k in kinds)
             lines = [json.dumps({'t': text}, ensure_ascii=False), '{"done":true,"truncated":false,"provider":"openrouter"}']
             return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
-        lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), '{"done":true,"truncated":false,"provider":"openrouter","model":"test/model:free"}']
+        lines = [json.dumps({'t': ANSWER[:30]}, ensure_ascii=False), json.dumps({'t': ANSWER[30:]}, ensure_ascii=False), json.dumps({'done': True, 'truncated': False, 'provider': 'openrouter', 'model': 'test/model:free', 'skipped': ['gemini-3.1-pro-preview 429 quota'], 'sources': [{'title': '書評甲', 'uri': 'https://example.com/review'}, {'title': '壞', 'uri': 'javascript:x'}]}, ensure_ascii=False)]
         return route.fulfill(status=200, content_type='application/x-ndjson', body='\n'.join(lines) + '\n')
 
     ctx = b.new_context()
@@ -170,7 +170,7 @@ def web_mode(b, url, img):
     page.route('**/api/ask', handle)
     page.goto(url + 'index.html')
     page.wait_for_function("document.getElementById('whereAmI').textContent.includes('網頁版')")
-    check(page.is_visible('#recsCard') and not any(c.get('search') for c in calls), '網頁版顯示新書推介；未有通行碼不會自動搜尋')
+    check(page.is_visible('#recsCard') and not any('你是選書顧問' in c['prompt'] for c in calls), '網頁版顯示新書推介；未有通行碼不會自動搜尋')
     check('Mistral，後備 Gemini' in page.inner_text('#whereAmI'), '頁底顯示主引擎和後備')
     check(page.is_visible('#askBtn') and page.is_hidden('#copyBtn') and page.is_visible('#pass'), '網頁版：顯示「核對我的重述」和通行碼欄')
 
@@ -197,6 +197,9 @@ def web_mode(b, url, img):
     check(NOTE in last['prompt'] and '【核對】' in last['prompt'] and len(last['images']) == 1 and last['images'][0]['type'] in ('image/jpeg', 'image/png') and last['images'][0]['data'], '網頁版提問含重述、【核對】及相片')
     check('承鏈' in last['prompt'] and '替換測試' in last['prompt'] and '淨效益轉負' in last['prompt'] and '領域機制' in last['prompt'], '提問要求首尾承接的推理鎖鏈、負收益臨界、替換測試、領域機制')
     check('答覆來源：OpenRouter · test/model:free' in page.inner_text('#records'), '記錄顯示答覆來源（引擎和模型）')
+    check(last.get('search') is True and '作答前必須先搜尋' in last['prompt'] and '你不能上網' not in last['prompt'], '網頁版核對要求先上網搜尋')
+    rec_txt = page.inner_text('#records')
+    check('未能使用（已改用下一個）：gemini-3.1-pro-preview 429 quota' in rec_txt and '網上來源 1 個' in rec_txt, '記錄顯示未能使用的引擎原因和網上來源（只留 http 連結）')
     say = page.inner_text('#say')
     check('覆蓋 2/3' in say and '講錯 1' in say, '網頁版答覆解析出覆蓋和講錯')
     check(page.evaluate("localStorage.getItem('reading-log:api-pass')") == 'secret', '通行碼記在 reading-log: 前綴鍵')
@@ -206,7 +209,7 @@ def web_mode(b, url, img):
 
     # 新書推介：有通行碼、未有推介 → 打開即自動搜尋一次
     page.wait_for_function("document.getElementById('recsText').textContent.includes('新書甲')")
-    rc = [c for c in calls if c.get('search')]
+    rc = [c for c in calls if '你是選書顧問' in c['prompt']]
     check(len(rc) == 1 and '測試之書' in rc[0]['prompt'] and '不限任何圖書館' in rc[0]['prompt'] and not rc[0]['images'], '自動推介：用搜尋、帶已讀書目、不限圖書館')
     links = page.eval_on_selector_all('#recsSrc a', 'as => as.map(a => a.href)')
     check(links == ['https://example.com/new-book'], '推介來源只顯示 http 連結')
@@ -214,11 +217,11 @@ def web_mode(b, url, img):
     page.reload()
     page.wait_for_function("document.getElementById('recsText').textContent.includes('新書甲')")
     page.wait_for_timeout(500)
-    check(len([c for c in calls if c.get('search')]) == 1, '一星期內重新打開不會再搜尋')
+    check(len([c for c in calls if '你是選書顧問' in c['prompt']]) == 1, '一星期內重新打開不會再搜尋')
     check(page.evaluate("+localStorage.getItem('reading-log:recs-tried') > 0"), '記錄上次自動搜尋時間（失敗也不會每次打開都重試）')
     page.click('#recsBtn')
     page.wait_for_function("document.getElementById('recsSay').textContent.includes('更新於')")
-    check(len([c for c in calls if c.get('search')]) == 2, '按「更新推介」即重新搜尋')
+    check(len([c for c in calls if '你是選書顧問' in c['prompt']]) == 2, '按「更新推介」即重新搜尋')
     # 篩書一鍵：核心主張＋十種視覺筆記
     page.check('#modeB')
     page.set_input_files('#file', img)
@@ -281,6 +284,8 @@ def api_check():
     check(o['allDown'].get('error') == 'upstream' and o['allDown'].get('detail', '').startswith('mistral') and '；gemini 503' in o['allDown'].get('detail', ''), 'API：全部失敗時列出每個引擎的原因')
     check(o['quota'].get('error') == 'rate_limited' and o['quota'].get('detail') == 'gemini 429 You exceeded your current quota, please check your plan.', 'API：錯誤原因只顯示最內層訊息')
     check(o['defaultOrder'] == ['gemini', 'openrouter', 'mistral'] and o['defaultFirst'].get('provider') == 'gemini' and o['defaultFirstPath'].startswith('/v1/models/gemini-3.1-pro-preview'), 'API：預設 Gemini 排第一，先用 Pro')
+    check(o['geminiQuota'].get('skipped', [])[:2] and 'gemini-3.1-pro-preview' in o['geminiQuota']['skipped'][0] and 'gemini-3.8-flash' in o['geminiQuota']['skipped'][1], 'API：done 列出用不到的 Gemini 型號和原因')
+    check(o['searchFallback'].get('provider') == 'openrouter' and o['searchFallbackPrompt'].startswith('（系統註：這次未能使用網上搜尋') and o['searchFallbackPrompt'].endswith('提問'), 'API：要求搜尋但 Gemini 用不到時，後備引擎提問加註未能搜尋')
     q = o['geminiQuotaPaths']
     check(o['geminiQuota'].get('provider') == 'openrouter' and 'gemini-3.1-pro-preview' in q[0] and 'gemini-3.8-flash' in q[1] and q[2] == 'nvidia/nemotron-3.5-super-vl:free', 'API：Gemini Pro、Flash 額度用完時改用 OpenRouter')
     check(o['searchBothFirst'].startswith('/v1/models/gemini') and o['searchBoth'].get('sources'), 'API：新書推介先用 Gemini（有 Google 搜尋）')

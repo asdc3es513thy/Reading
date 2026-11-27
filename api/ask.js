@@ -6,7 +6,8 @@
 // MISTRAL_MODELS（預設 mistral-large-4-0,mistral-medium-3-5）；
 // GEMINI_MODEL（預設 gemini-3.1-pro-preview,gemini-3.8-flash：Pro 額度用完、太忙或不存在就改用 Flash）；GEMINI_THINKING（LOW／MEDIUM／HIGH／XHIGH／OFF，預設 XHIGH）。
 // 請求可加 light: true（全書整理等排版工作）：Gemini 略過 Pro 型號，留額度給篩書和核對。
-// 請求可加 search: true（新書推介）：要用 Google 搜尋，所以先用 Gemini，其他做後備（後備沒有搜尋）。
+// 請求可加 search: true（篩書、核對、新書推介）：用 Gemini 的 Google 搜尋，所以先用 Gemini；後備沒有搜尋，提問前會加註說明。
+// done 另有 skipped：答覆前試過但用不到的引擎／型號及原因，方便看出 Gemini Pro 為何沒有用到。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "...", "sources": [...], "provider": "...", "model": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
 
@@ -16,6 +17,7 @@ const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions';
 const MISTRAL_DEFAULT = 'mistral-large-4-0,mistral-medium-3-5';
 const GEMINI_DEFAULT = 'gemini-3.1-pro-preview,gemini-3.8-flash';
 const ORDER_DEFAULT = 'gemini,openrouter,mistral';
+const NO_SEARCH = '（系統註：這次未能使用網上搜尋。提問中要求搜尋的部分，改用圖中資料和模型記憶，並標明「模型記憶，未查證」；不要假裝查過。）\n\n';
 const MAX_IMAGES = 4;
 const MAX_PROMPT = 60000;
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -69,19 +71,19 @@ export async function POST(request) {
       const send = o => ctl.enqueue(enc.encode(JSON.stringify(o) + '\n'));
       const fail = (e, p) => send({error: errorCode(e), detail: detailOf(e, p)});
       let last = null;
-      const errs = [];
+      const errs = [], skips = [];
       // 按次序試每個引擎；未送出任何文字之前出錯，都改用下一個
       for (const p of order) {
         let opened, sent = false;
         try {
-          opened = p === 'openrouter' ? await openOpenRouter(images, prompt, request.signal)
-            : p === 'mistral' ? await openMistral(images, prompt, request.signal)
+          opened = p === 'openrouter' ? await openOpenRouter(images, search ? NO_SEARCH + prompt : prompt, request.signal)
+            : p === 'mistral' ? await openMistral(images, search ? NO_SEARCH + prompt : prompt, request.signal)
             : await openGemini(images, prompt, request.signal, search, light);
           for await (const ev of opened.events) {
             if (ev.t) { sent = true; send({t: ev.t}); }
             else if (ev.end) {
               if (ev.refused) send({error: 'refused', detail: p});
-              else send({done: true, truncated: !!ev.truncated, stop: ev.stop || '', sources: ev.sources || [], provider: opened.name, model: opened.model});
+              else send({done: true, truncated: !!ev.truncated, stop: ev.stop || '', sources: ev.sources || [], provider: opened.name, model: opened.model, skipped: [...skips, ...(opened.skipped || [])]});
             }
           }
           ctl.close(); return;
@@ -89,6 +91,7 @@ export async function POST(request) {
           if (e && e.name === 'AbortError') { send({error: 'cancelled'}); ctl.close(); return; }
           if (sent) { fail(e, p); ctl.close(); return; }
           last = e; errs.push(detailOf(e, p));
+          skips.push(...(e && e.skipped && e.skipped.length ? e.skipped : [detailOf(e, p)]));
         }
       }
       send({error: errorCode(last), detail: errs.join('；')});
@@ -201,8 +204,9 @@ async function openGemini(images, prompt, signal, search, light) {
   const parts = [...images.map(im => ({inlineData: {mimeType: im.type, data: im.data}})), {text: prompt}];
   const level = (process.env.GEMINI_THINKING || 'XHIGH').trim().toUpperCase();
   let last;
-  // 按次序試每個模型：型號不存在、無權限或額度用完（404／403／429）就試下一個；
-  // 不接受指定思考深度（400）就用該模型預設再試一次。
+  const skipped = [];
+  // 按次序試每個模型：任何 API 錯誤（型號不存在、無權限、額度用完、參數不接受等）都記下原因，改試下一個；
+  // 不接受指定思考深度（400）就先用該模型預設再試一次。
   const all = list(process.env.GEMINI_MODEL, GEMINI_DEFAULT), lite = all.filter(m => !/-pro\b/i.test(m));
   for (const model of light && lite.length ? lite : all) {
     const config = {maxOutputTokens: 32000, abortSignal: signal};
@@ -211,16 +215,17 @@ async function openGemini(images, prompt, signal, search, light) {
     for (;;) {
       try {
         const res = await ai.models.generateContentStream({model, contents: [{role: 'user', parts}], config});
-        return {name: 'gemini', model, events: geminiEvents(res)};
+        return {name: 'gemini', model, events: geminiEvents(res), skipped};
       } catch (e) {
         last = e;
         if (!(e instanceof ApiError)) throw e;
         if (e.status === 400 && config.thinkingConfig && /think/i.test(e.message || '')) { delete config.thinkingConfig; continue; }
-        if (RETRYABLE(e.status)) break;
-        throw e;
+        skipped.push(detailOf(e, model));
+        break;
       }
     }
   }
+  if (last) last.skipped = skipped;
   throw last;
 }
 
