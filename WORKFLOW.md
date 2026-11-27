@@ -15,7 +15,7 @@
 
 - 三個版本的記錄**互不相通**，只能用「匯出／匯入備份」搬（見第七節）。
 - 頁底的版本號三邊相同，即代表程式已同步。
-- 答覆深度：Claude 版最深入。Vercel 版先用 Gemini Pro（`gemini-3.1-pro-preview`），額度用完或太忙改用 Gemini 3.8 Flash，再不行就 OpenRouter 免費模型（Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra），最後 Mistral（Large 4，再 Medium 3.5）。「全書整理」十種版式只是排版，直接用 Flash，留 Pro 額度給篩書和核對。每條記錄底的「答覆來源」顯示實際用了哪個模型。三個引擎都要求最高推理深度。中國公司的模型（DeepSeek、Qwen、GLM、Kimi、MiniMax、ERNIE 等及其衍生模型）一律不用，`openrouter/free` 會隨機路由到它們，所以也排除；環境變數列了也會被略過。
+- 答覆深度：Claude 版最深入。Vercel 版先用 Gemini Pro（`gemini-3.1-pro-preview`），額度用完或太忙改用 Gemini 3.8 Flash，再不行就 OpenRouter 免費模型（Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra），最後 Mistral（Large 4，再 Medium 3.5）。「全書整理」十種版式只是排版，直接用 Flash，留 Pro 額度給篩書和核對。每條記錄底的「答覆來源」顯示實際用了哪個模型；「未能使用」列出前面用不到的引擎和原因（例如 Gemini 429 額度用完）。篩書和核對會先用 Gemini 的 Google 搜尋找目錄、書評和批評，答覆下可展開「網上來源」；改用 OpenRouter 或 Mistral 時沒有搜尋。三個引擎都要求最高推理深度。中國公司的模型（DeepSeek、Qwen、GLM、Kimi、MiniMax、ERNIE 等及其衍生模型）一律不用，`openrouter/free` 會隨機路由到它們，所以也排除；環境變數列了也會被略過。
 
 ---
 
