@@ -465,7 +465,7 @@ details.chap>summary .n{color:var(--muted);font-weight:400;font-size:.85rem;whit
 
   <footer class="foot">
     <p class="msg" id="whereAmI"></p>
-    <p class="msg">版本 2026-11-26 · 5997318 · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
+    <p class="msg">版本 2026-11-27 · c44e8c2 · 原始檔：<a class="link" href="https://github.com/asdc3es513thy/Reading" target="_blank" rel="noopener">GitHub Reading</a></p>
   </footer>
 </div>
 
@@ -1046,7 +1046,7 @@ async function genAllDigests(bk, extra){
         const chunk = left.slice(i, i + 5), names = chunk.map(k => DGK[k][1]).join('、');
         const head = (round ? '補齊第 ' + round + ' 輪：' : '生成中：') + names;
         show(head + '（已完成 ' + done.size + '/' + target.length + '）…');
-        const r = await S.sample(digestPrompt(bk, chunk, extra), {signal: ctl.signal,
+        const r = await S.sample(digestPrompt(bk, chunk, extra), {signal: ctl.signal, light: true,
           onText: ({text}) => show(head + '（這批已收到 ' + Object.keys(splitDigests(text)).length + '/' + chunk.length + '，已完成 ' + done.size + '/' + target.length + '）…')});
         const map = splitDigests(r.text);
         for (const k of chunk) if (await saveDigest(bk, k, map[k])) done.add(k);
@@ -1475,7 +1475,7 @@ function digestSlide(bk, kind, st){
     }
     S.digBusy = bk + '|' + kind; st.live = ''; renderRecords();
     try {
-      const r = await S.sample(prompt, {onText: ({text}) => { st.live = text; const q = $('dgBox').querySelector('.dg-live'); if (q) q.textContent = text; }});
+      const r = await S.sample(prompt, {light: true, onText: ({text}) => { st.live = text; const q = $('dgBox').querySelector('.dg-live'); if (q) q.textContent = text; }});
       if (!(await save(r.text))) { st.err = '答覆不符合格式，未儲存，請再試。'; st.bad = r.text; }
     } catch (e) { st.err = errCopy(e && e.code) + '（錯誤代碼：' + ((e && e.code) || 'script') + '）'; }
     S.digBusy = null; renderRecords();
@@ -2010,7 +2010,7 @@ function route(){
   }
 }
 function renderAll(){ renderComposer(); renderRecords(); renderCards(); renderPractice(); }
-/* ---------- web answers: same-site /api/ask (Vercel: OpenRouter → Mistral → Gemini), used only outside Claude ---------- */
+/* ---------- web answers: same-site /api/ask (Vercel: Gemini → OpenRouter → Mistral), used only outside Claude ---------- */
 const PASS_KEY = 'reading-log:api-pass';
 function remoteSample(max){
   const ask = async (prompt, opts = {}) => {
@@ -2023,7 +2023,7 @@ function remoteSample(max){
       images.push({type: (b.type || 'image/jpeg'), data: u.slice(i + 1)});
     }
     let r;
-    try { r = await fetch('api/ask', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({prompt, images, pass, search: !!opts.search}), signal: opts.signal}); }
+    try { r = await fetch('api/ask', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({prompt, images, pass, search: !!opts.search, light: !!opts.light}), signal: opts.signal}); }
     catch (e) { throw {code: e && e.name === 'AbortError' ? 'cancelled' : 'network'}; }
     if (!r.ok) { let c = ''; try { c = (await r.json()).error; } catch (e) {} if (c === 'bad_pass') store(PASS_KEY, ''); throw {code: c || 'upstream', detail: c ? '' : 'HTTP ' + r.status}; }
     const rd = r.body.getReader(), dec = new TextDecoder();

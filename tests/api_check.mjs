@@ -50,13 +50,13 @@ const fake = http.createServer((req, res) => {
       res.writeHead(429, {'content-type': 'application/json'});
       return res.end(JSON.stringify({error: {code: 429, message: 'You exceeded your current quota, please check your plan.', status: 'RESOURCE_EXHAUSTED'}}));
     }
-    if (mode === 'alldown' || (mode === 'pro503' && req.url.includes('gemini-3.8-pro'))) {
+    if (mode === 'alldown' || (mode === 'pro503' && req.url.includes('gemini-3.1-pro-preview'))) {
       res.writeHead(503, {'content-type': 'application/json'});
       return res.end(JSON.stringify({error: {code: 503, message: 'The model is overloaded. Please try again later.', status: 'UNAVAILABLE'}}));
     }
-    if (mode === 'nopro' && req.url.includes('gemini-3.8-pro')) {
+    if (mode === 'nopro' && req.url.includes('gemini-3.1-pro-preview')) {
       res.writeHead(404, {'content-type': 'application/json'});
-      return res.end(JSON.stringify({error: {code: 404, message: 'models/gemini-3.8-pro is not found', status: 'NOT_FOUND'}}));
+      return res.end(JSON.stringify({error: {code: 404, message: 'models/gemini-3.1-pro-preview is not found', status: 'NOT_FOUND'}}));
     }
     if (mode === 'nothink' && JSON.parse(body).generationConfig?.thinkingConfig) {
       res.writeHead(400, {'content-type': 'application/json'});
@@ -115,10 +115,15 @@ const b2 = seen.length;
 out.search = (await (await post({pass: 'secret', prompt: 'p', search: true})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 out.searchTools = seen[b2].body.tools;
 out.plainTools = seen[0].body.tools || null;
+mode = 'ok';
+let bl = seen.length;
+await (await post({pass: 'secret', prompt: 'p', light: true})).text();
+out.lightPath = seen[bl] ? seen[bl].path : '';
 mode = 'blocked';
 out.blocked = (await (await post({pass: 'secret', prompt: 'p'})).text()).trim().split('\n').map(l => JSON.parse(l)).pop();
 
-// ---- Mistral 做主引擎，Gemini 做後備 ----
+// ---- Mistral 做主引擎，Gemini 做後備（用 ENGINE_ORDER 指定舊次序）----
+process.env.ENGINE_ORDER = 'openrouter,mistral,gemini';
 const last = async b => (await (await post(b)).text()).trim().split('\n').map(l => JSON.parse(l));
 process.env.MISTRAL_API_KEY = 'mi-test'; process.env.MISTRAL_URL = `http://127.0.0.1:${fake.address().port}/mistral/chat/completions`;
 out.ghGet = await api.GET().json();
@@ -176,6 +181,17 @@ mode = 'search';
 b4 = seen.length;
 await last({pass: 'secret', prompt: 'p', search: true});
 out.orSearchFirst = seen[b4].path.split('?')[0];
+// ---- 預設次序：Gemini 先 ----
+delete process.env.ENGINE_ORDER;
+out.defaultOrder = (await api.GET().json()).providers;
+mode = 'ok';
+b4 = seen.length;
+out.defaultFirst = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.defaultFirstPath = seen[b4].path.split('?')[0];
+mode = 'quota';
+b4 = seen.length;
+out.geminiQuota = (await last({pass: 'secret', prompt: 'p'})).pop();
+out.geminiQuotaPaths = seen.slice(b4).map(x => x.body.model || x.path.split('?')[0]);
 delete process.env.OPENROUTER_API_KEY;
 delete process.env.GEMINI_API_KEY;
 out.ghOnlyGet = (await api.GET().json()).providers;

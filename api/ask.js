@@ -1,10 +1,11 @@
 // Vercel 函數：把頁面的提問和書頁相片轉交 AI，逐段串流答覆。
-// 引擎次序：OpenRouter（OPENROUTER_API_KEY）→ Mistral（MISTRAL_API_KEY）→ Google Gemini（GEMINI_API_KEY）。
+// 引擎次序（預設）：Google Gemini（GEMINI_API_KEY）→ OpenRouter（OPENROUTER_API_KEY）→ Mistral（MISTRAL_API_KEY）；可用 ENGINE_ORDER 改（例如 openrouter,mistral,gemini）。
 // 另需 APP_PASSCODE（通行碼，防止別人用你的額度）。金鑰設一個也可以；前一個出錯、額度用完或輸入太長，就自動改用下一個。
 // 每個引擎都要求最高推理深度；中國公司的模型（含以其為底的衍生模型）一律不用，即使環境變數列了也會略過。
 // 可選：OPENROUTER_MODELS（逗號分隔；預設 Nemotron 3.5 Super VL → Gemma 4 31B → Nemotron 3 Ultra，全部免費）；
 // MISTRAL_MODELS（預設 mistral-large-4-0,mistral-medium-3-5）；
-// GEMINI_MODEL（預設 gemini-3.8-pro,gemini-3.8-flash）；GEMINI_THINKING（LOW／MEDIUM／HIGH／XHIGH／OFF，預設 XHIGH）。
+// GEMINI_MODEL（預設 gemini-3.1-pro-preview,gemini-3.8-flash：Pro 額度用完、太忙或不存在就改用 Flash）；GEMINI_THINKING（LOW／MEDIUM／HIGH／XHIGH／OFF，預設 XHIGH）。
+// 請求可加 light: true（全書整理等排版工作）：Gemini 略過 Pro 型號，留額度給篩書和核對。
 // 請求可加 search: true（新書推介）：要用 Google 搜尋，所以先用 Gemini，其他做後備（後備沒有搜尋）。
 // 回應格式：每行一個 JSON —— {"t": "文字"}，最後 {"done": true, "truncated": bool, "stop": "...", "sources": [...], "provider": "...", "model": "..."}，出錯時 {"error": "代碼"}。
 import {GoogleGenAI, ApiError} from '@google/genai';
@@ -13,7 +14,8 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const OPENROUTER_DEFAULT = 'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b-it:free,nvidia/nemotron-3-ultra-550b-a55b:free';
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions';
 const MISTRAL_DEFAULT = 'mistral-large-4-0,mistral-medium-3-5';
-const GEMINI_DEFAULT = 'gemini-3.8-pro,gemini-3.8-flash';
+const GEMINI_DEFAULT = 'gemini-3.1-pro-preview,gemini-3.8-flash';
+const ORDER_DEFAULT = 'gemini,openrouter,mistral';
 const MAX_IMAGES = 4;
 const MAX_PROMPT = 60000;
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -26,7 +28,12 @@ const list = (v, d) => String(v || d).split(',').map(m => m.trim()).filter(Boole
 // 中國公司的模型及其衍生模型；openrouter/free、openrouter/auto 會隨機路由到它們，所以也排除
 const CHINESE = /(^|[/:])(deepseek|qwen|qwq|alibaba|ali-|z-ai|zai|glm|thudm|zhipu|chatglm|moonshot|kimi|minimax|baidu|ernie|tencent|hunyuan|bytedance|seed|doubao|stepfun|step-?\d|inclusionai|ling-|ring-|xiaomi|mimo|meituan|longcat|kwaipilot|kwai|kling|01-ai|yi-|internlm|intern-|shanghai|baichuan|iflytek|spark-|xingchen|telechat|dots|rednote|xiaohongshu|particle-ai|sensetime|sensenova|skywork|kunlun|openbmb|minicpm|huawei|pangu|ant-|bailing|openrouter\/(free|auto)$)/i;
 const models = (v, d) => list(v, d).filter(m => !CHINESE.test(m));
-const providers = () => [process.env.OPENROUTER_API_KEY ? 'openrouter' : '', process.env.MISTRAL_API_KEY ? 'mistral' : '', process.env.GEMINI_API_KEY ? 'gemini' : ''].filter(Boolean);
+const KEYS = {gemini: 'GEMINI_API_KEY', openrouter: 'OPENROUTER_API_KEY', mistral: 'MISTRAL_API_KEY'};
+// 有金鑰的引擎，按 ENGINE_ORDER（預設 Gemini 先）排列；次序沒列到的引擎排最後
+const providers = () => {
+  const want = list(process.env.ENGINE_ORDER, ORDER_DEFAULT).map(x => x.toLowerCase()).filter(x => KEYS[x]);
+  return [...new Set([...want, ...Object.keys(KEYS)])].filter(p => process.env[KEYS[p]]);
+};
 const configured = () => !!(providers().length && process.env.APP_PASSCODE);
 
 class ProviderError extends Error {
@@ -53,7 +60,7 @@ export async function POST(request) {
   for (const im of images) {
     if (!im || !TYPES.has(im.type) || typeof im.data !== 'string' || !im.data) return json(400, {error: 'image_rejected'});
   }
-  const search = body.search === true;
+  const search = body.search === true, light = body.light === true;
   const order = providers().sort((a, b) => search ? (a === 'gemini' ? -1 : 1) - (b === 'gemini' ? -1 : 1) : 0);
 
   const enc = new TextEncoder();
@@ -69,7 +76,7 @@ export async function POST(request) {
         try {
           opened = p === 'openrouter' ? await openOpenRouter(images, prompt, request.signal)
             : p === 'mistral' ? await openMistral(images, prompt, request.signal)
-            : await openGemini(images, prompt, request.signal, search);
+            : await openGemini(images, prompt, request.signal, search, light);
           for await (const ev of opened.events) {
             if (ev.t) { sent = true; send({t: ev.t}); }
             else if (ev.end) {
@@ -187,7 +194,7 @@ async function* chatEvents(r, name) {
 }
 
 /* ---------- Google Gemini ---------- */
-async function openGemini(images, prompt, signal, search) {
+async function openGemini(images, prompt, signal, search, light) {
   const opts = {apiKey: process.env.GEMINI_API_KEY};
   if (process.env.GEMINI_BASE_URL) opts.httpOptions = {baseUrl: process.env.GEMINI_BASE_URL};
   const ai = new GoogleGenAI(opts);
@@ -196,7 +203,8 @@ async function openGemini(images, prompt, signal, search) {
   let last;
   // 按次序試每個模型：型號不存在、無權限或額度用完（404／403／429）就試下一個；
   // 不接受指定思考深度（400）就用該模型預設再試一次。
-  for (const model of list(process.env.GEMINI_MODEL, GEMINI_DEFAULT)) {
+  const all = list(process.env.GEMINI_MODEL, GEMINI_DEFAULT), lite = all.filter(m => !/-pro\b/i.test(m));
+  for (const model of light && lite.length ? lite : all) {
     const config = {maxOutputTokens: 32000, abortSignal: signal};
     if (level !== 'OFF') config.thinkingConfig = {thinkingLevel: level};
     if (search) config.tools = [{googleSearch: {}}];

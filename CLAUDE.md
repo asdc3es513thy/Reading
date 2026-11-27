@@ -8,7 +8,7 @@
 - `src/bg.jpg`：宇宙背景相片。`src/VERSION`：發佈日期，每次發佈改為當日。
 - `build.py`：產生 `index.html`（GitHub Pages 版，commit）、`dist/reading-log.html`（Claude 版，不 commit）、`METHOD.md`（方法全文，commit）。
 - 同一份程式碼三種運行方式：有 `window.claude` 就用 Claude 的 `db`、`sample`、`assets`、`downloads`；沒有就用瀏覽器 IndexedDB（資料庫名 `reading-log`），答覆改為複製提問文字、貼上答覆。
-- Vercel 網頁版：同網站有 `api/ask`（`api/ask.js`：引擎次序 OpenRouter（`OPENROUTER_API_KEY`，可選 `OPENROUTER_MODELS`，預設非中國免費模型）→ Mistral（`MISTRAL_API_KEY`，可選 `MISTRAL_MODELS`）→ Google Gemini（`GEMINI_API_KEY`）；每個引擎都要求最高推理深度；**用戶不用任何中國 AI**（`CHINESE` 過濾，`openrouter/free` 亦排除），不可加回；不要預設經第三方用 Claude（Anthropic 不在香港提供服務）；另需 `APP_PASSCODE`；可選 `GEMINI_MODEL`（預設先 Pro 後 Flash）、`GEMINI_THINKING`（預設 `XHIGH`））就經它取得答覆，記錄仍用 IndexedDB；GitHub Pages 沒有這個路徑，維持複製模式。網頁版的「新書推介」（`search: true` → 先用 Gemini 的 Google 搜尋）每星期自動更新一次，結果存在 localStorage `reading-log:recs`，不入資料庫。
+- Vercel 網頁版：同網站有 `api/ask`（`api/ask.js`：引擎次序預設 Google Gemini（`GEMINI_API_KEY`，先 `gemini-3.1-pro-preview` 後 `gemini-3.8-flash`；`light: true` 的全書整理請求略過 Pro）→ OpenRouter（`OPENROUTER_API_KEY`，可選 `OPENROUTER_MODELS`，預設非中國免費模型）→ Mistral（`MISTRAL_API_KEY`，可選 `MISTRAL_MODELS`），可用 `ENGINE_ORDER` 改；用戶定案 Gemini 排第一，因為 OpenRouter 免費模型和 Gemini Flash 深度不足；每個引擎都要求最高推理深度；**用戶不用任何中國 AI**（`CHINESE` 過濾，`openrouter/free` 亦排除），不可加回；不要預設經第三方用 Claude（Anthropic 不在香港提供服務）；另需 `APP_PASSCODE`；可選 `GEMINI_MODEL`、`GEMINI_THINKING`（預設 `XHIGH`））就經它取得答覆，記錄仍用 IndexedDB；GitHub Pages 沒有這個路徑，維持複製模式。網頁版的「新書推介」（`search: true` → 先用 Gemini 的 Google 搜尋）每星期自動更新一次，結果存在 localStorage `reading-log:recs`，不入資料庫。
 
 ## 更新流程
 
