@@ -16,6 +16,7 @@ const OPENROUTER_DEFAULT = 'nvidia/nemotron-3.5-super-vl:free,google/gemma-4-31b
 const MISTRAL_URL = 'https://api.mistral.ai/v1/chat/completions';
 const MISTRAL_DEFAULT = 'mistral-large-4-0,mistral-medium-3-5';
 const GEMINI_DEFAULT = 'gemini-3.1-pro-preview,gemini-3.8-flash';
+const FALLBACK_CHECK = '（系統註：你是後備引擎。【第一性原理】的鎖鏈最容易出錯：每一環先問「這個證據是支持這個結論，還是支持另一個結論？」和「這個預測符合該領域已確立的規律嗎？」；不肯定的事實不要放入鎖鏈，改寫成條件式並標「推論」。）\n\n';
 const ORDER_DEFAULT = 'gemini,openrouter,mistral';
 const NO_SEARCH = '（系統註：這次未能使用網上搜尋。提問中要求搜尋的部分，改用圖中資料和模型記憶，並標明「模型記憶，未查證」；不要假裝查過。）\n\n';
 const MAX_IMAGES = 4;
@@ -76,8 +77,8 @@ export async function POST(request) {
       for (const p of order) {
         let opened, sent = false;
         try {
-          opened = p === 'openrouter' ? await openOpenRouter(images, search ? NO_SEARCH + prompt : prompt, request.signal)
-            : p === 'mistral' ? await openMistral(images, search ? NO_SEARCH + prompt : prompt, request.signal)
+          opened = p === 'openrouter' ? await openOpenRouter(images, FALLBACK_CHECK + (search ? NO_SEARCH : '') + prompt, request.signal)
+            : p === 'mistral' ? await openMistral(images, FALLBACK_CHECK + (search ? NO_SEARCH : '') + prompt, request.signal)
             : await openGemini(images, prompt, request.signal, search, light);
           for await (const ev of opened.events) {
             if (ev.t) { sent = true; send({t: ev.t}); }
